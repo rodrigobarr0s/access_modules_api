@@ -1,0 +1,75 @@
+# docker compose up --build -d (containers em background)
+# docker compose down
+# docker compose stop
+# docker compose start
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: accessdb
+      POSTGRES_USER: accessuser
+      POSTGRES_PASSWORD: accesspass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [appnet]
+
+  app1:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
+      SPRING_DATASOURCE_USERNAME: accessuser
+      SPRING_DATASOURCE_PASSWORD: accesspass
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on: [postgres]
+    networks: [appnet]
+
+  app2:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
+      SPRING_DATASOURCE_USERNAME: accessuser
+      SPRING_DATASOURCE_PASSWORD: accesspass
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on: [postgres]
+    networks: [appnet]
+
+  app3:
+    build: .
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
+      SPRING_DATASOURCE_USERNAME: accessuser
+      SPRING_DATASOURCE_PASSWORD: accesspass
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on: [postgres]
+    networks: [appnet]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on: [postgres]
+    networks: [appnet]
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - app1
+      - app2
+      - app3
+    networks: [appnet]
+
+volumes:
+  pgdata:
+
+networks:
+  appnet:
+    driver: bridge
