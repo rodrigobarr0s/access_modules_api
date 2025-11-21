@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
 import io.github.rodrigobarr0s.access_modules_api.repository.UserRepository;
@@ -22,15 +23,18 @@ public class UserService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<User> findAll() {
         return repository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public User findByUsername(String userName) {
         return repository.findByUsername(userName)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário", userName));
     }
 
+    @Transactional
     public User save(User user) {
         repository.findByUsername(user.getUsername())
                 .ifPresent(u -> {
@@ -39,6 +43,7 @@ public class UserService {
         return repository.save(user);
     }
 
+    @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Usuário", "id=" + id);
@@ -50,6 +55,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public User update(Long id, User obj) {
         try {
             User entity = repository.getReferenceById(id);
