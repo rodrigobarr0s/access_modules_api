@@ -34,3 +34,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
       labels: module_incompatibility
       context: setup
+
+  - include:
+      file: migrations/007-insert-initial-modules.sql
+      relativeToChangelogFile: true
+      labels: modules
+      context: seed
