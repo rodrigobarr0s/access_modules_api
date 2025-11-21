@@ -12,28 +12,28 @@ databaseChangeLog:
       context: setup
 
   - include:
-      file: migrations/003-insert-initial-users.sql
-      relativeToChangelogFile: true
-      labels: users
-      context: seed
-
-  - include:
-      file: migrations/004-create-user-module-access.sql
+      file: migrations/003-create-user-module-access.sql
       relativeToChangelogFile: true
       labels: user_module_access
       context: setup
 
   - include:
-      file: migrations/005-create-access-solicitation.sql
+      file: migrations/004-create-access-solicitation.sql
       relativeToChangelogFile: true
       labels: access_solicitation
       context: setup
 
   - include:
-      file: migrations/006-create-module-incompatibility.sql
+      file: migrations/005-create-module-incompatibility.sql
       relativeToChangelogFile: true
       labels: module_incompatibility
       context: setup
+
+  - include:
+      file: migrations/006-insert-initial-users.sql
+      relativeToChangelogFile: true
+      labels: users
+      context: seed
 
   - include:
       file: migrations/007-insert-initial-modules.sql
