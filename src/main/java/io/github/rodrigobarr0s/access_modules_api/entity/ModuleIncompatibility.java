@@ -7,7 +7,8 @@ import java.util.Objects;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "module_incompatibility")
+@Table(name = "module_incompatibility", uniqueConstraints = @UniqueConstraint(columnNames = { "module_id",
+        "incompatible_module_id" }))
 public class ModuleIncompatibility implements Serializable {
 
     @Serial
