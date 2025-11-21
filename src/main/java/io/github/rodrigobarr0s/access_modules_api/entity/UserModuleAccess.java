@@ -8,7 +8,7 @@ import java.util.Objects;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "user_module_access")
+@Table(name = "user_module_access", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "module_id" }))
 public class UserModuleAccess implements Serializable {
 
     @Serial
