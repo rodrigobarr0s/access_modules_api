@@ -1,5 +1,36 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/migrations/001-create-users-table.sql
+      file: migrations/001-create-users-table.sql
+      relativeToChangelogFile: true
+      labels: users
+      context: setup
+
   - include:
-      file: db/changelog/migrations/002-insert-initial-users.sql
+      file: migrations/002-create-modules-table.sql
+      relativeToChangelogFile: true
+      labels: modules
+      context: setup
+
+  - include:
+      file: migrations/003-insert-initial-users.sql
+      relativeToChangelogFile: true
+      labels: users
+      context: seed
+
+  - include:
+      file: migrations/004-create-user-module-access.sql
+      relativeToChangelogFile: true
+      labels: user_module_access
+      context: setup
+
+  - include:
+      file: migrations/005-create-access-solicitation.sql
+      relativeToChangelogFile: true
+      labels: access_solicitation
+      context: setup
+
+  - include:
+      file: migrations/006-create-module-incompatibility.sql
+      relativeToChangelogFile: true
+      labels: module_incompatibility
+      context: setup

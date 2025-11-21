@@ -2,13 +2,11 @@ package io.github.rodrigobarr0s.access_modules_api.entity;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "users")
@@ -27,8 +25,15 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String role;
 
+    // Muitos-para-muitos com Module via UserModuleAccess
+    @ManyToMany
+    @JoinTable(name = "user_module_access", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "module_id"))
+    private Set<Module> modules = new HashSet<>();
+
+    // Construtores
     public User() {
     }
 
@@ -39,6 +44,7 @@ public class User implements Serializable {
         this.role = role;
     }
 
+    // Getters e Setters
     public Long getId() {
         return id;
     }
@@ -71,29 +77,40 @@ public class User implements Serializable {
         this.role = role;
     }
 
+    public Set<Module> getModules() {
+        return modules;
+    }
+
+    // Métodos auxiliares para gerenciar relação com Module
+    public void addModule(Module module) {
+        this.modules.add(module);
+        module.getUsers().add(this);
+    }
+
+    public void removeModule(Module module) {
+        this.modules.remove(module);
+        module.getUsers().remove(this);
+    }
+
+    // equals e hashCode baseados em id
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof User))
+            return false;
+        User user = (User) o;
+        return Objects.equals(id, user.id);
+    }
+
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        return result;
+        return Objects.hash(id);
     }
 
+    // toString para debug/log
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        User other = (User) obj;
-        if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        return true;
+    public String toString() {
+        return "User{id=" + id + ", username='" + username + "', role='" + role + "'}";
     }
-
 }
