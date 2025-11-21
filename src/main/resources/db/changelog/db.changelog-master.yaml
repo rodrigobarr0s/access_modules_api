@@ -40,3 +40,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
       labels: modules
       context: seed
+
+  - include:
+      file: migrations/008-insert-user-module-access.sql
+      relativeToChangelogFile: true
+      labels: user_module_access
+      context: seed
