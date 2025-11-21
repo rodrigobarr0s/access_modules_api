@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
 import jakarta.persistence.*;
 
 @Entity
@@ -25,8 +26,9 @@ public class User implements Serializable {
     @Column(nullable = false)
     private String password;
 
+    // Armazena o código do enum no banco
     @Column(nullable = false)
-    private String role;
+    private Integer role;
 
     // Muitos-para-muitos com Module via UserModuleAccess
     @ManyToMany
@@ -37,11 +39,11 @@ public class User implements Serializable {
     public User() {
     }
 
-    public User(Long id, String username, String password, String role) {
+    public User(Long id, String username, String password, Role role) {
         this.id = id;
         this.username = username;
         this.password = password;
-        this.role = role;
+        setRole(role);
     }
 
     // Getters e Setters
@@ -69,12 +71,16 @@ public class User implements Serializable {
         this.password = password;
     }
 
-    public String getRole() {
-        return role;
+    // Getter/Setter para trabalhar com Role como enum
+    public Role getRole() {
+        return role != null ? Role.valueOf(role) : null;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setRole(Role role) {
+        if (role != null) {
+            this.role = role.getCode();
+
+        }
     }
 
     public Set<Module> getModules() {
@@ -111,6 +117,7 @@ public class User implements Serializable {
     // toString para debug/log
     @Override
     public String toString() {
-        return "User{id=" + id + ", username='" + username + "', role='" + role + "'}";
+        return "User{id=" + id + ", username='" + username + "', role='" + getRole() + "'}";
     }
+
 }
