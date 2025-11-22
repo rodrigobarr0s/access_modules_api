@@ -30,12 +30,25 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = service.findByEmail(request.email());
-
-        if (passwordEncoder.matches(request.password(), user.getPassword())) {
-            String token = jwtUtil.generateToken(user.getEmail());
-            return ResponseEntity.ok(new LoginResponse(token, user.getEmail(), user.getRole().name()));
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Usuário não encontrado");
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciais inválidas");
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Credenciais inválidas");
+        }
+
+        // Gerar token com claims extras
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getId());
+
+        LoginResponse response = new LoginResponse(
+                token,
+                user.getEmail(),
+                user.getRole().name());
+
+        return ResponseEntity.ok(response);
     }
 
 }
