@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,11 @@ import jakarta.persistence.EntityNotFoundException;
 public class UserService {
 
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository repository) {
+    public UserService(UserRepository repository, PasswordEncoder passwordEncoder) {
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -40,6 +43,10 @@ public class UserService {
                 .ifPresent(u -> {
                     throw new DuplicateEntityException("Usuário", user.getEmail());
                 });
+
+        // Criptografa a senha antes de salvar
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         return repository.save(user);
     }
 
@@ -68,7 +75,12 @@ public class UserService {
 
     private void updateData(User entity, User obj) {
         entity.setEmail(Objects.requireNonNullElse(obj.getEmail(), entity.getEmail()));
-        entity.setPassword(Objects.requireNonNullElse(obj.getPassword(), entity.getPassword()));
+
+        if (obj.getPassword() != null) {
+            // Criptografa a nova senha
+            entity.setPassword(passwordEncoder.encode(obj.getPassword()));
+        }
+
         entity.setRole(Objects.requireNonNullElse(obj.getRole(), entity.getRole()));
     }
 
