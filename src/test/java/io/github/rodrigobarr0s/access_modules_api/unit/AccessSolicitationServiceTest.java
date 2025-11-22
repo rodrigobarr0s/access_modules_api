@@ -20,6 +20,7 @@ import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
 import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
+import io.github.rodrigobarr0s.access_modules_api.repository.SolicitationSequenceRepository;
 import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +29,9 @@ class AccessSolicitationServiceTest {
     @Mock
     private AccessSolicitationRepository repository;
 
+    @Mock
+    private SolicitationSequenceRepository sequenceRepository;
+
     @InjectMocks
     private AccessSolicitationService service;
 
@@ -35,7 +39,7 @@ class AccessSolicitationServiceTest {
     @DisplayName("Deve criar solicitação com protocolo e status PENDING")
     void testCreateSetsProtocoloAndPendingStatus() {
         AccessSolicitation solicitation = new AccessSolicitation();
-        when(repository.count()).thenReturn(1L);
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AccessSolicitation created = service.create(solicitation);
@@ -99,7 +103,7 @@ class AccessSolicitationServiceTest {
         solicitation.setProtocolo("SOL-4");
 
         when(repository.findByProtocolo("SOL-4")).thenReturn(Optional.of(solicitation));
-        when(repository.count()).thenReturn(10L);
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(10L);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AccessSolicitation renewed = service.renew("SOL-4");

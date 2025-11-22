@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.ModuleIncompatibility;
@@ -21,6 +22,7 @@ import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotF
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class ModuleIncompatibilityServiceIntegrationTest {
 
     @Autowired
