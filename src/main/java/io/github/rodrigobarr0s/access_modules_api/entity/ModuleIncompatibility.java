@@ -18,17 +18,14 @@ public class ModuleIncompatibility implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Módulo principal
     @ManyToOne
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
 
-    // Módulo incompatível
     @ManyToOne
     @JoinColumn(name = "incompatible_module_id", nullable = false)
     private Module incompatibleModule;
 
-    // Construtores
     public ModuleIncompatibility() {
     }
 
@@ -36,6 +33,14 @@ public class ModuleIncompatibility implements Serializable {
         this.id = id;
         this.module = module;
         this.incompatibleModule = incompatibleModule;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void validate() {
+        if (module != null && module.equals(incompatibleModule)) {
+            throw new IllegalArgumentException("Um módulo não pode ser incompatível consigo mesmo.");
+        }
     }
 
     // Getters e Setters
