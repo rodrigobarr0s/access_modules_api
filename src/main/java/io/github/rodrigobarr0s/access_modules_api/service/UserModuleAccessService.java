@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
@@ -31,6 +32,7 @@ public class UserModuleAccessService {
         this.moduleRepository = moduleRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<UserModuleAccess> findByUser(User user) {
         if (user == null || user.getId() == null || !userRepository.existsById(user.getId())) {
             throw new ResourceNotFoundException("Usuário", "id=" + (user != null ? user.getId() : "null"));
@@ -38,6 +40,7 @@ public class UserModuleAccessService {
         return repository.findByUser(user);
     }
 
+    @Transactional(readOnly = true)
     public List<UserModuleAccess> findByModule(Module module) {
         if (module == null || module.getId() == null || !moduleRepository.existsById(module.getId())) {
             throw new ResourceNotFoundException("Módulo", "id=" + (module != null ? module.getId() : "null"));
@@ -45,6 +48,7 @@ public class UserModuleAccessService {
         return repository.findByModule(module);
     }
 
+    @Transactional
     public UserModuleAccess grantAccess(User user, Module module) {
         if (repository.existsByUserAndModule(user, module)) {
             throw new DuplicateEntityException(
@@ -59,6 +63,7 @@ public class UserModuleAccessService {
         return repository.save(access);
     }
 
+    @Transactional
     public void revokeAccess(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Acesso de usuário a módulo", "id=" + id);
