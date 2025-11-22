@@ -1,182 +1,214 @@
-// package io.github.rodrigobarr0s.access_modules_api.unit;
+package io.github.rodrigobarr0s.access_modules_api.unit;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.junit.jupiter.api.Assertions.assertNotNull;
-// import static org.junit.jupiter.api.Assertions.assertThrows;
-// import static org.mockito.ArgumentMatchers.any;
-// import static org.mockito.Mockito.doThrow;
-// import static org.mockito.Mockito.verify;
-// import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-// import java.util.Arrays;
-// import java.util.List;
-// import java.util.Optional;
+import java.util.List;
+import java.util.Optional;
 
-// import org.junit.jupiter.api.DisplayName;
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.extension.ExtendWith;
-// import org.mockito.InjectMocks;
-// import org.mockito.Mock;
-// import org.mockito.junit.jupiter.MockitoExtension;
-// import org.springframework.dao.DataIntegrityViolationException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-// import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
-// import io.github.rodrigobarr0s.access_modules_api.entity.Module;
-// import io.github.rodrigobarr0s.access_modules_api.entity.User;
-// import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
-// import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
-// import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
-// import io.github.rodrigobarr0s.access_modules_api.service.exception.DatabaseException;
-// import io.github.rodrigobarr0s.access_modules_api.service.exception.DuplicateEntityException;
-// import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotFoundException;
-// import jakarta.persistence.EntityNotFoundException;
+import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
+import io.github.rodrigobarr0s.access_modules_api.entity.Module;
+import io.github.rodrigobarr0s.access_modules_api.entity.User;
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
+import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
+import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
 
-// @ExtendWith(MockitoExtension.class)
-// class AccessSolicitationServiceTest {
+@ExtendWith(MockitoExtension.class)
+class AccessSolicitationServiceTest {
 
-//     @Mock
-//     private AccessSolicitationRepository repository;
+    @Mock
+    private AccessSolicitationRepository repository;
 
-//     @InjectMocks
-//     private AccessSolicitationService service;
+    @InjectMocks
+    private AccessSolicitationService service;
 
-//     @Test
-//     @DisplayName("Deve salvar solicitação nova com status PENDING")
-//     void save_shouldPersistSolicitation() {
-//         User user = new User(1L, "user1", "123456", Role.ADMIN);
-//         Module module = new Module(1L, "mod1", "desc1");
-//         AccessSolicitation solicitation = new AccessSolicitation();
-//         solicitation.setUser(user);
-//         solicitation.setModule(module);
+    @Test
+    @DisplayName("Deve criar solicitação com protocolo e status PENDING")
+    void testCreateSetsProtocoloAndPendingStatus() {
+        AccessSolicitation solicitation = new AccessSolicitation();
+        when(repository.count()).thenReturn(1L);
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-//         when(repository.findByUserAndModuleAndStatus(user, module, "PENDING")).thenReturn(Optional.empty());
-//         when(repository.save(any(AccessSolicitation.class)))
-//                 .thenAnswer(invocation -> {
-//                     AccessSolicitation s = invocation.getArgument(0);
-//                     s.setId(1L);
-//                     return s;
-//                 });
+        AccessSolicitation created = service.create(solicitation);
 
-//         AccessSolicitation result = service.save(solicitation);
+        assertNotNull(created.getProtocolo());
+        assertEquals(SolicitationStatus.PENDING, created.getStatus());
+    }
 
-//         assertNotNull(result.getId());
-//         assertEquals("PENDING", result.getStatus());
-//         verify(repository).save(solicitation);
-//     }
+    @Test
+    @DisplayName("Deve lançar exceção quando não encontrar solicitação por protocolo")
+    void testFindByProtocoloThrowsWhenNotFound() {
+        when(repository.findByProtocolo("X")).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> service.findByProtocolo("X"));
+    }
 
-//     @Test
-//     @DisplayName("Deve lançar DuplicateEntityException ao salvar solicitação duplicada")
-//     void save_shouldThrowDuplicateEntityException() {
-//         User user = new User(1L, "user1", "123456", Role.ADMIN);
-//         Module module = new Module(1L, "mod1", "desc1");
-//         AccessSolicitation solicitation = new AccessSolicitation();
-//         solicitation.setUser(user);
-//         solicitation.setModule(module);
+    @Test
+    @DisplayName("Deve aprovar solicitação e alterar status para APPROVED")
+    void testApproveChangesStatusToApproved() {
+        AccessSolicitation solicitation = new AccessSolicitation();
+        solicitation.setProtocolo("SOL-1");
+        solicitation.setStatus(SolicitationStatus.PENDING);
 
-//         when(repository.findByUserAndModuleAndStatus(user, module, "PENDING"))
-//                 .thenReturn(Optional.of(new AccessSolicitation()));
+        when(repository.findByProtocolo("SOL-1")).thenReturn(Optional.of(solicitation));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-//         assertThrows(DuplicateEntityException.class, () -> service.save(solicitation));
-//     }
+        AccessSolicitation approved = service.approve("SOL-1");
 
-//     @Test
-//     @DisplayName("Deve retornar todas as solicitações")
-//     void findAll_shouldReturnList() {
-//         when(repository.findAll()).thenReturn(Arrays.asList(new AccessSolicitation()));
+        assertEquals(SolicitationStatus.APPROVED, approved.getStatus());
+    }
 
-//         List<AccessSolicitation> result = service.findAll();
+    @Test
+    @DisplayName("Deve rejeitar solicitação e definir motivo")
+    void testRejectSetsStatusRejectedAndReason() {
+        AccessSolicitation solicitation = new AccessSolicitation();
+        when(repository.findByProtocolo("SOL-2")).thenReturn(Optional.of(solicitation));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-//         assertEquals(1, result.size());
-//         verify(repository).findAll();
-//     }
+        AccessSolicitation rejected = service.reject("SOL-2", "Motivo");
 
-//     @Test
-//     @DisplayName("Deve retornar solicitação por ID existente")
-//     void findById_shouldReturnSolicitation() {
-//         when(repository.findById(1L)).thenReturn(Optional.of(new AccessSolicitation()));
-//         AccessSolicitation result = service.findById(1L);
-//         assertNotNull(result);
-//     }
+        assertEquals(SolicitationStatus.REJECTED, rejected.getStatus());
+        assertEquals("Motivo", rejected.getCancelReason());
+    }
 
-//     @Test
-//     @DisplayName("Deve lançar ResourceNotFoundException ao buscar solicitação inexistente")
-//     void findById_shouldThrowResourceNotFound() {
-//         when(repository.findById(99L)).thenReturn(Optional.empty());
-//         assertThrows(ResourceNotFoundException.class, () -> service.findById(99L));
-//     }
+    @Test
+    @DisplayName("Deve cancelar solicitação e definir motivo")
+    void testCancelSetsStatusCanceledAndReason() {
+        AccessSolicitation solicitation = new AccessSolicitation();
+        when(repository.findByProtocolo("SOL-3")).thenReturn(Optional.of(solicitation));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-//     @Test
-//     @DisplayName("Deve retornar solicitações pendentes")
-//     void findPending_shouldReturnList() {
-//         when(repository.findByStatus("PENDING")).thenReturn(Arrays.asList(new AccessSolicitation()));
-//         List<AccessSolicitation> result = service.findPending();
-//         assertEquals(1, result.size());
-//     }
+        AccessSolicitation canceled = service.cancel("SOL-3", "Cancelado");
 
-//     @Test
-//     @DisplayName("Deve deletar solicitação existente")
-//     void delete_shouldRemoveSolicitation() {
-//         when(repository.existsById(1L)).thenReturn(true);
-//         service.delete(1L);
-//         verify(repository).deleteById(1L);
-//     }
+        assertEquals(SolicitationStatus.CANCELED, canceled.getStatus());
+        assertEquals("Cancelado", canceled.getCancelReason());
+    }
 
-//     @Test
-//     @DisplayName("Deve lançar ResourceNotFoundException ao deletar solicitação inexistente")
-//     void delete_shouldThrowResourceNotFound() {
-//         when(repository.existsById(99L)).thenReturn(false);
-//         assertThrows(ResourceNotFoundException.class, () -> service.delete(99L));
-//     }
+    @Test
+    @DisplayName("Deve renovar solicitação, atualizar expiresAt e gerar novo protocolo")
+    void testRenewUpdatesExpiresAtAndProtocolo() {
+        AccessSolicitation solicitation = new AccessSolicitation();
+        solicitation.setProtocolo("SOL-4");
 
-//     @Test
-//     @DisplayName("Deve lançar DatabaseException ao ocorrer erro de integridade na deleção")
-//     void delete_shouldThrowDatabaseException() {
-//         when(repository.existsById(1L)).thenReturn(true);
-//         doThrow(new DataIntegrityViolationException("error")).when(repository).deleteById(1L);
-//         assertThrows(DatabaseException.class, () -> service.delete(1L));
-//     }
+        when(repository.findByProtocolo("SOL-4")).thenReturn(Optional.of(solicitation));
+        when(repository.count()).thenReturn(10L);
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-//     @Test
-//     @DisplayName("Deve aprovar solicitação existente")
-//     void approve_shouldSetStatusApproved() {
-//         AccessSolicitation solicitation = new AccessSolicitation();
-//         solicitation.setId(1L);
-//         solicitation.setStatus("PENDING");
+        AccessSolicitation renewed = service.renew("SOL-4");
 
-//         when(repository.getReferenceById(1L)).thenReturn(solicitation);
-//         when(repository.save(solicitation)).thenReturn(solicitation);
+        assertEquals(SolicitationStatus.PENDING, renewed.getStatus());
+        assertNotNull(renewed.getExpiresAt());
+        assertTrue(renewed.getProtocolo().startsWith("SOL-"));
+    }
 
-//         AccessSolicitation result = service.approve(1L);
+    @Test
+    @DisplayName("Deve chamar repositório ao buscar por status")
+    void testFindByStatusCallsRepository() {
+        when(repository.findByStatus(2)).thenReturn(List.of(new AccessSolicitation()));
 
-//         assertEquals("APPROVED", result.getStatus());
-//     }
+        List<AccessSolicitation> result = service.findByStatus(SolicitationStatus.APPROVED);
 
-//     @Test
-//     @DisplayName("Deve lançar ResourceNotFoundException ao aprovar solicitação inexistente")
-//     void approve_shouldThrowResourceNotFound() {
-//         when(repository.getReferenceById(99L)).thenThrow(new EntityNotFoundException());
-//         assertThrows(ResourceNotFoundException.class, () -> service.approve(99L));
-//     }
+        assertEquals(1, result.size());
+        verify(repository).findByStatus(2);
+    }
 
-//     @Test
-//     @DisplayName("Deve rejeitar solicitação existente")
-//     void reject_shouldSetStatusRejected() {
-//         AccessSolicitation solicitation = new AccessSolicitation();
-//         solicitation.setId(1L);
-//         solicitation.setStatus("PENDING");
+    @Test
+    @DisplayName("Deve aplicar todos os filtros corretamente")
+    void testFindWithFiltersFiltersCorrectly() {
+        User user = new User();
+        user.setId(1L);
+        Module module = new Module();
+        module.setId(2L);
 
-//         when(repository.getReferenceById(1L)).thenReturn(solicitation);
-//         when(repository.save(solicitation)).thenReturn(solicitation);
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setUser(user);
+        s1.setModule(module);
+        s1.setStatus(SolicitationStatus.PENDING);
+        s1.setUrgente(true);
 
-//         AccessSolicitation result = service.reject(1L);
+        when(repository.findAll()).thenReturn(List.of(s1));
 
-//         assertEquals("REJECTED", result.getStatus());
-//     }
+        List<AccessSolicitation> result = service.findWithFilters(SolicitationStatus.PENDING, 1L, 2L, true);
 
-//     @Test
-//     @DisplayName("Deve lançar ResourceNotFoundException ao rejeitar solicitação inexistente")
-//     void reject_shouldThrowResourceNotFound() {
-//         when(repository.getReferenceById(99L)).thenThrow(new EntityNotFoundException());
-//         assertThrows(ResourceNotFoundException.class, () -> service.reject(99L));
-//     }
-// }
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por status")
+    void testFindWithFiltersByStatus() {
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setStatus(SolicitationStatus.PENDING);
+
+        when(repository.findAll()).thenReturn(List.of(s1));
+
+        List<AccessSolicitation> result = service.findWithFilters(SolicitationStatus.PENDING, null, null, null);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por userId")
+    void testFindWithFiltersByUserId() {
+        User user = new User();
+        user.setId(1L);
+
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setUser(user);
+
+        when(repository.findAll()).thenReturn(List.of(s1));
+
+        List<AccessSolicitation> result = service.findWithFilters(null, 1L, null, null);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por moduleId")
+    void testFindWithFiltersByModuleId() {
+        Module module = new Module();
+        module.setId(2L);
+
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setModule(module);
+
+        when(repository.findAll()).thenReturn(List.of(s1));
+
+        List<AccessSolicitation> result = service.findWithFilters(null, null, 2L, null);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar por urgência")
+    void testFindWithFiltersByUrgente() {
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setUrgente(true);
+
+        when(repository.findAll()).thenReturn(List.of(s1));
+
+        List<AccessSolicitation> result = service.findWithFilters(null, null, null, true);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("Deve retornar todos quando filtros são nulos")
+    void testFindWithFiltersAllNullReturnsAll() {
+        AccessSolicitation s1 = new AccessSolicitation();
+        s1.setStatus(SolicitationStatus.PENDING);
+
+        when(repository.findAll()).thenReturn(List.of(s1));
+
+        List<AccessSolicitation> result = service.findWithFilters(null, null, null, null);
+
+        assertEquals(1, result.size());
+    }
+}

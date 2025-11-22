@@ -20,7 +20,7 @@ public class AccessSolicitationService {
         this.repository = repository;
     }
 
-    // 🔹 Geração de protocolo no formato SOL-YYYYMMDD-NNNN
+    // Geração de protocolo no formato SOL-YYYYMMDD-NNNN
     private String generateProtocolo() {
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long sequence = repository.count() + 1; // simples, pode evoluir para sequence no banco
@@ -77,7 +77,7 @@ public class AccessSolicitationService {
         return repository.findByStatus(status.getCode());
     }
 
-    // 🔹 Consulta com filtros dinâmicos
+    // Consulta com filtros dinâmicos
     @Transactional(readOnly = true)
     public List<AccessSolicitation> findWithFilters(SolicitationStatus status, Long userId, Long moduleId, Boolean urgente) {
         // Aqui pode evoluir para Specification/Criteria, mas deixo simplificado
