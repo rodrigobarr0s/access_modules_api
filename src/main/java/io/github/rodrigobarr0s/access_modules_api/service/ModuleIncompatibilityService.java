@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.ModuleIncompatibility;
@@ -25,11 +26,13 @@ public class ModuleIncompatibilityService {
         this.moduleRepository = moduleRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<ModuleIncompatibility> findByModule(Module module) {
         validateModuleExists(module);
         return repository.findByModule(module);
     }
 
+    @Transactional(readOnly = true)
     public boolean isIncompatible(Module module, Module other) {
         validateModuleExists(module);
         validateModuleExists(other);
@@ -37,6 +40,7 @@ public class ModuleIncompatibilityService {
                 .anyMatch(inc -> inc.getIncompatibleModule().equals(other));
     }
 
+    @Transactional
     public ModuleIncompatibility addIncompatibility(Module module, Module other) {
         validateModuleExists(module);
         validateModuleExists(other);
@@ -52,6 +56,7 @@ public class ModuleIncompatibilityService {
         return repository.save(incompatibility);
     }
 
+    @Transactional
     public void removeIncompatibility(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Incompatibilidade de módulo", "id=" + id);
