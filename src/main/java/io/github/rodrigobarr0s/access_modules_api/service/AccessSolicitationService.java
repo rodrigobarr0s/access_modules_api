@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
@@ -21,6 +22,7 @@ public class AccessSolicitationService {
         this.repository = repository;
     }
 
+    @Transactional
     public AccessSolicitation save(AccessSolicitation solicitation) {
         repository.findByUserAndModuleAndStatus(
                 solicitation.getUser(),
@@ -34,19 +36,23 @@ public class AccessSolicitationService {
         return repository.save(solicitation);
     }
 
+    @Transactional(readOnly = true)
     public List<AccessSolicitation> findAll() {
         return repository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public AccessSolicitation findById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação de acesso", "id=" + id));
     }
 
+    @Transactional(readOnly = true)
     public List<AccessSolicitation> findPending() {
         return repository.findByStatus("PENDING");
     }
 
+    @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Solicitação de acesso", "id=" + id);
@@ -58,6 +64,7 @@ public class AccessSolicitationService {
         }
     }
 
+    @Transactional
     public AccessSolicitation approve(Long id) {
         try {
             AccessSolicitation solicitation = repository.getReferenceById(id);
@@ -68,6 +75,7 @@ public class AccessSolicitationService {
         }
     }
 
+    @Transactional
     public AccessSolicitation reject(Long id) {
         try {
             AccessSolicitation solicitation = repository.getReferenceById(id);
