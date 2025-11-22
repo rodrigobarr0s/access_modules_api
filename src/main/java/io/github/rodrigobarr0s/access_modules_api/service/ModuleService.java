@@ -8,6 +8,7 @@ import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotF
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,15 +22,18 @@ public class ModuleService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
     public List<Module> findAll() {
         return repository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Module findByName(String name) {
         return repository.findByName(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Módulo", name));
     }
 
+    @Transactional
     public Module save(Module module) {
         repository.findByName(module.getName())
                 .ifPresent(m -> {
@@ -38,6 +42,7 @@ public class ModuleService {
         return repository.save(module);
     }
 
+    @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Módulo", "id=" + id);
@@ -49,6 +54,7 @@ public class ModuleService {
         }
     }
 
+    @Transactional
     public Module update(Long id, Module obj) {
         try {
             Module entity = repository.getReferenceById(id);
