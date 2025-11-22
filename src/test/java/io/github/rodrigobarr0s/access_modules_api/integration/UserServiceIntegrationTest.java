@@ -1,9 +1,6 @@
 package io.github.rodrigobarr0s.access_modules_api.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
@@ -12,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
@@ -21,6 +19,7 @@ import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotF
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class UserServiceIntegrationTest {
 
     @Autowired
@@ -37,6 +36,10 @@ class UserServiceIntegrationTest {
         User found = service.findByEmail("rodrigo");
         assertEquals("rodrigo", found.getEmail());
         assertEquals(Role.ADMIN, found.getRole());
+
+        // senha deve estar criptografada
+        assertNotNull(found.getPassword());
+        assertNotEquals("123", found.getPassword());
     }
 
     @Test
@@ -62,7 +65,7 @@ class UserServiceIntegrationTest {
     }
 
     @Test
-    @DisplayName("Deve atualizar dados de usuário existente")
+    @DisplayName("Deve atualizar dados de usuário existente e criptografar nova senha")
     void shouldUpdateUserSuccessfully() {
         User user = service.save(new User(null, "carlos", "123", Role.AUDITOR));
 
@@ -71,6 +74,10 @@ class UserServiceIntegrationTest {
 
         assertEquals("carlos_updated", result.getEmail());
         assertEquals(Role.ADMIN, result.getRole());
+
+        // senha deve estar criptografada
+        assertNotNull(result.getPassword());
+        assertNotEquals("456", result.getPassword());
     }
 
     @Test
