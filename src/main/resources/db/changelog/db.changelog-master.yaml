@@ -30,19 +30,25 @@ databaseChangeLog:
       context: setup
 
   - include:
-      file: migrations/006-insert-initial-users.sql
+      file: migrations/006-create-solicitation-sequence.sql
+      relativeToChangelogFile: true
+      labels: access_solicitation
+      context: setup
+
+  - include:
+      file: migrations/007-insert-initial-users.sql
       relativeToChangelogFile: true
       labels: users
       context: seed
 
   - include:
-      file: migrations/007-insert-initial-modules.sql
+      file: migrations/008-insert-initial-modules.sql
       relativeToChangelogFile: true
       labels: modules
       context: seed
 
   - include:
-      file: migrations/008-insert-user-module-access.sql
+      file: migrations/009-insert-user-module-access.sql
       relativeToChangelogFile: true
       labels: user_module_access
       context: seed

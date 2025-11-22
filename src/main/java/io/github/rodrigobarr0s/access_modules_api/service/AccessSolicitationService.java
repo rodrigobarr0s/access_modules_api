@@ -10,20 +10,24 @@ import org.springframework.transaction.annotation.Transactional;
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
 import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
+import io.github.rodrigobarr0s.access_modules_api.repository.SolicitationSequenceRepository;
 
 @Service
 public class AccessSolicitationService {
 
     private final AccessSolicitationRepository repository;
+    private final SolicitationSequenceRepository sequenceRepository;
 
-    public AccessSolicitationService(AccessSolicitationRepository repository) {
+    public AccessSolicitationService(AccessSolicitationRepository repository,
+            SolicitationSequenceRepository sequenceRepository) {
         this.repository = repository;
+        this.sequenceRepository = sequenceRepository;
     }
 
     // Geração de protocolo no formato SOL-YYYYMMDD-NNNN
     private String generateProtocolo() {
         String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long sequence = repository.count() + 1; // simples, pode evoluir para sequence no banco
+        Long sequence = sequenceRepository.getNextSequenceValue();
         return String.format("SOL-%s-%04d", datePart, sequence);
     }
 
@@ -79,7 +83,8 @@ public class AccessSolicitationService {
 
     // Consulta com filtros dinâmicos
     @Transactional(readOnly = true)
-    public List<AccessSolicitation> findWithFilters(SolicitationStatus status, Long userId, Long moduleId, Boolean urgente) {
+    public List<AccessSolicitation> findWithFilters(SolicitationStatus status, Long userId, Long moduleId,
+            Boolean urgente) {
         // Aqui pode evoluir para Specification/Criteria, mas deixo simplificado
         List<AccessSolicitation> all = repository.findAll();
 
