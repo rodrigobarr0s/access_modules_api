@@ -92,7 +92,7 @@ class UserModuleAccessServiceIntegrationTest {
     void findByUser_shouldThrowResourceNotFound() {
         User fakeUser = new User();
         fakeUser.setId(999L);
-        fakeUser.setUsername("ghost");
+        fakeUser.setEmail("ghost");
         fakeUser.setPassword("123");
         fakeUser.setRole(Role.AUDITOR);
 

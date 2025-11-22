@@ -1,20 +1,20 @@
 --liquibase formatted sql
 
---changeset rodrigobarr0s:insert-user-module-access
---comment: Vincular usuários iniciais aos módulos correspondentes
+--changeset rodrigobarr0s:insert-user-module-access 
+--comment: Inserção de vínculos iniciais entre usuários e módulos
 
 INSERT INTO user_module_access (user_id, module_id, granted_at)
 VALUES
-((SELECT id FROM users WHERE username = 'finance_admin'),
+((SELECT id FROM users WHERE email = 'financeiro@empresa.com'),
  (SELECT id FROM modules WHERE name = 'FINANCEIRO'),
  CURRENT_TIMESTAMP),
-((SELECT id FROM users WHERE username = 'rh_admin'),
+((SELECT id FROM users WHERE email = 'rh@empresa.com'),
  (SELECT id FROM modules WHERE name = 'RH'),
  CURRENT_TIMESTAMP),
-((SELECT id FROM users WHERE username = 'ops_user'),
+((SELECT id FROM users WHERE email = 'operacoes@empresa.com'),
  (SELECT id FROM modules WHERE name = 'OPERACOES'),
  CURRENT_TIMESTAMP),
-((SELECT id FROM users WHERE username = 'ti_auditor'),
+((SELECT id FROM users WHERE email = 'auditoria@empresa.com'),
  (SELECT id FROM modules WHERE name = 'TI'),
  CURRENT_TIMESTAMP);
 

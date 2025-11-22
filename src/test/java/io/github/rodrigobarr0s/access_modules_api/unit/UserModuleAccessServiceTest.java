@@ -161,7 +161,7 @@ class UserModuleAccessServiceTest {
     @DisplayName("Deve lançar ResourceNotFoundException quando usuário tem id null")
     void findByUser_shouldThrowWhenUserIdIsNull() {
         User user = new User();
-        user.setUsername("userX");
+        user.setEmail("userX");
         assertThrows(ResourceNotFoundException.class, () -> service.findByUser(user));
     }
 

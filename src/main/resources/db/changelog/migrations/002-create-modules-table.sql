@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset rodrigobarr0s:create-modules-table 
+--changeset rodrigobarr0s:create-modules-table
 --comment: Criação da tabela de módulos
 
 CREATE TABLE modules (

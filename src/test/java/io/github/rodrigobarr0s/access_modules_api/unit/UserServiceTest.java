@@ -39,13 +39,13 @@ class UserServiceTest {
     void shouldSaveUserSuccessfully() {
         User user = new User(null, "rodrigo", "123", Role.ADMIN);
 
-        when(repository.findByUsername("rodrigo")).thenReturn(Optional.empty());
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.empty());
         when(repository.save(user)).thenReturn(new User(1L, "rodrigo", "123", Role.ADMIN));
 
         User saved = service.save(user);
 
         assertNotNull(saved.getId());
-        assertEquals("rodrigo", saved.getUsername());
+        assertEquals("rodrigo", saved.getEmail());
         verify(repository).save(user);
     }
 
@@ -54,7 +54,7 @@ class UserServiceTest {
     void shouldThrowDuplicateEntityExceptionOnSave() {
         User user = new User(null, "rodrigo", "123", Role.ADMIN);
 
-        when(repository.findByUsername("rodrigo")).thenReturn(Optional.of(user));
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.of(user));
 
         assertThrows(DuplicateEntityException.class, () -> service.save(user));
     }
@@ -64,19 +64,19 @@ class UserServiceTest {
     void shouldFindUserByUsername() {
         User user = new User(1L, "rodrigo", "123", Role.ADMIN);
 
-        when(repository.findByUsername("rodrigo")).thenReturn(Optional.of(user));
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.of(user));
 
-        User found = service.findByUsername("rodrigo");
+        User found = service.findByEmail("rodrigo");
 
-        assertEquals("rodrigo", found.getUsername());
+        assertEquals("rodrigo", found.getEmail());
     }
 
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException ao buscar usuário inexistente")
     void shouldThrowResourceNotFoundExceptionOnFindByUsername() {
-        when(repository.findByUsername("rodrigo")).thenReturn(Optional.empty());
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.findByUsername("rodrigo"));
+        assertThrows(ResourceNotFoundException.class, () -> service.findByEmail("rodrigo"));
     }
 
     @Test

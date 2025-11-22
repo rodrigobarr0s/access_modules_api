@@ -53,7 +53,7 @@ public class UserModuleAccessService {
         if (repository.existsByUserAndModule(user, module)) {
             throw new DuplicateEntityException(
                     "Acesso de usuário a módulo",
-                    "usuário=" + user.getUsername() + ", módulo=" + module.getName());
+                    "usuário=" + user.getEmail() + ", módulo=" + module.getName());
         }
 
         UserModuleAccess access = new UserModuleAccess();

@@ -92,7 +92,7 @@ public class AccessSolicitation implements Serializable {
 
     @Override
     public String toString() {
-        return "AccessSolicitation{id=" + id + ", user=" + user.getUsername() +
+        return "AccessSolicitation{id=" + id + ", user=" + user.getEmail() +
                 ", module=" + module.getName() + ", status=" + status + "}";
     }
 }

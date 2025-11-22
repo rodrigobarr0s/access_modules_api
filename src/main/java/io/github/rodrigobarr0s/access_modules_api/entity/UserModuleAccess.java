@@ -81,7 +81,7 @@ public class UserModuleAccess implements Serializable {
 
     @Override
     public String toString() {
-        return "UserModuleAccess{id=" + id + ", user=" + user.getUsername() +
+        return "UserModuleAccess{id=" + id + ", user=" + user.getEmail() +
                 ", module=" + module.getName() + ", grantedAt=" + grantedAt + "}";
     }
 }

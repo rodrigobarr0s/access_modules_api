@@ -34,8 +34,8 @@ class UserServiceIntegrationTest {
 
         assertNotNull(saved.getId());
 
-        User found = service.findByUsername("rodrigo");
-        assertEquals("rodrigo", found.getUsername());
+        User found = service.findByEmail("rodrigo");
+        assertEquals("rodrigo", found.getEmail());
         assertEquals(Role.ADMIN, found.getRole());
     }
 
@@ -57,8 +57,8 @@ class UserServiceIntegrationTest {
         List<User> users = service.findAll();
 
         assertTrue(users.size() >= 2);
-        assertTrue(users.stream().anyMatch(u -> u.getUsername().equals("joao")));
-        assertTrue(users.stream().anyMatch(u -> u.getUsername().equals("ana")));
+        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("joao")));
+        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("ana")));
     }
 
     @Test
@@ -69,7 +69,7 @@ class UserServiceIntegrationTest {
         User updated = new User(null, "carlos_updated", "456", Role.ADMIN);
         User result = service.update(user.getId(), updated);
 
-        assertEquals("carlos_updated", result.getUsername());
+        assertEquals("carlos_updated", result.getEmail());
         assertEquals(Role.ADMIN, result.getRole());
     }
 
@@ -88,7 +88,7 @@ class UserServiceIntegrationTest {
 
         service.delete(user.getId());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.findByUsername("delete_me"));
+        assertThrows(ResourceNotFoundException.class, () -> service.findByEmail("delete_me"));
     }
 
     @Test

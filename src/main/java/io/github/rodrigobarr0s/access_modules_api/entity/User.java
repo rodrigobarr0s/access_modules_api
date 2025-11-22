@@ -21,7 +21,7 @@ public class User implements Serializable {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -30,18 +30,17 @@ public class User implements Serializable {
     @Column(nullable = false)
     private Integer role;
 
-    // Muitos-para-muitos com Module via UserModuleAccess
-    @ManyToMany
-    @JoinTable(name = "user_module_access", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "module_id"))
-    private Set<Module> modules = new HashSet<>();
+    // Relacionamento com UserModuleAccess
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserModuleAccess> accesses = new HashSet<>();
 
     // Construtores
     public User() {
     }
 
-    public User(Long id, String username, String password, Role role) {
+    public User(Long id, String email, String password, Role role) {
         this.id = id;
-        this.username = username;
+        this.email = email;
         this.password = password;
         setRole(role);
     }
@@ -55,12 +54,12 @@ public class User implements Serializable {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getEmail() {
+        return email;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {
@@ -71,7 +70,6 @@ public class User implements Serializable {
         this.password = password;
     }
 
-    // Getter/Setter para trabalhar com Role como enum
     public Role getRole() {
         return role != null ? Role.valueOf(role) : null;
     }
@@ -79,23 +77,22 @@ public class User implements Serializable {
     public void setRole(Role role) {
         if (role != null) {
             this.role = role.getCode();
-
         }
     }
 
-    public Set<Module> getModules() {
-        return modules;
+    public Set<UserModuleAccess> getAccesses() {
+        return accesses;
     }
 
-    // Métodos auxiliares para gerenciar relação com Module
-    public void addModule(Module module) {
-        this.modules.add(module);
-        module.getUsers().add(this);
+    // Métodos auxiliares para gerenciar relação com UserModuleAccess
+    public void addAccess(UserModuleAccess access) {
+        this.accesses.add(access);
+        access.setUser(this);
     }
 
-    public void removeModule(Module module) {
-        this.modules.remove(module);
-        module.getUsers().remove(this);
+    public void removeAccess(UserModuleAccess access) {
+        this.accesses.remove(access);
+        access.setUser(null);
     }
 
     // equals e hashCode baseados em id
@@ -114,10 +111,8 @@ public class User implements Serializable {
         return Objects.hash(id);
     }
 
-    // toString para debug/log
     @Override
     public String toString() {
-        return "User{id=" + id + ", username='" + username + "', role='" + getRole() + "'}";
+        return "User{id=" + id + ", email='" + email + "', role='" + getRole() + "'}";
     }
-
 }

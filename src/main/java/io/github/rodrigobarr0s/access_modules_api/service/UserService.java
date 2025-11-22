@@ -29,16 +29,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public User findByUsername(String userName) {
-        return repository.findByUsername(userName)
+    public User findByEmail(String userName) {
+        return repository.findByEmail(userName)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário", userName));
     }
 
     @Transactional
     public User save(User user) {
-        repository.findByUsername(user.getUsername())
+        repository.findByEmail(user.getEmail())
                 .ifPresent(u -> {
-                    throw new DuplicateEntityException("Usuário", user.getUsername());
+                    throw new DuplicateEntityException("Usuário", user.getEmail());
                 });
         return repository.save(user);
     }
@@ -67,7 +67,7 @@ public class UserService {
     }
 
     private void updateData(User entity, User obj) {
-        entity.setUsername(Objects.requireNonNullElse(obj.getUsername(), entity.getUsername()));
+        entity.setEmail(Objects.requireNonNullElse(obj.getEmail(), entity.getEmail()));
         entity.setPassword(Objects.requireNonNullElse(obj.getPassword(), entity.getPassword()));
         entity.setRole(Objects.requireNonNullElse(obj.getRole(), entity.getRole()));
     }
