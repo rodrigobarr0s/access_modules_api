@@ -6,6 +6,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -18,7 +19,7 @@ public class JwtUtil {
     private final long expiration;
 
     public JwtUtil(@Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expiration) {
+                   @Value("${jwt.expiration}") long expiration) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.expiration = expiration;
     }
@@ -50,5 +51,20 @@ public class JwtUtil {
         } catch (JwtException e) {
             return false;
         }
+    }
+
+    // Helpers para facilitar uso e testes
+
+    public String getEmailFromToken(String token) {
+        return extractUsername(token);
+    }
+
+    public Role getRoleFromToken(String token) {
+        String role = extractAllClaims(token).get("role", String.class);
+        return Role.valueOf(role);
+    }
+
+    public Long getUserIdFromToken(String token) {
+        return extractAllClaims(token).get("userId", Long.class);
     }
 }
