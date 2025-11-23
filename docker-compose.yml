@@ -1,7 +1,10 @@
 # docker compose up --build -d (containers em background)
-# docker compose down
+# docker compose down -v (reseta completamente o ambiente)
 # docker compose stop
 # docker compose start
+# docker compose ps
+# docker volume ls
+# docker volume prune (remove volumes órfãos)
 # docker logs <nome-ou-id-do-container> (log de saida)
 # docker logs -f <nome-ou-id-do-container> (log em tempo de execução)
 services:
@@ -24,13 +27,13 @@ services:
     container_name: app1
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_LIQUIBASE_ENABLED: true
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
       # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
       JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
-      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
@@ -41,13 +44,13 @@ services:
     container_name: app2
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_LIQUIBASE_ENABLED: false
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
       # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
       JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
-      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
@@ -58,13 +61,13 @@ services:
     container_name: app3
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_LIQUIBASE_ENABLED: false
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
       # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
       JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
-      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
