@@ -64,6 +64,16 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Deve lançar DatabaseException ao salvar usuário com senha nula")
+    void shouldThrowDatabaseExceptionOnSaveWithNullPassword() {
+        User user = new User(null, "rodrigo", null, Role.ADMIN);
+
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.empty());
+
+        assertThrows(DatabaseException.class, () -> service.save(user));
+    }
+
+    @Test
     @DisplayName("Deve retornar usuário existente pelo username")
     void shouldFindUserByUsername() {
         User user = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
@@ -127,5 +137,49 @@ class UserServiceTest {
         assertEquals("encodedNovaSenha", updated.getPassword());
         verify(passwordEncoder).encode("novaSenha");
         verify(repository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao atualizar usuário inexistente")
+    void shouldThrowResourceNotFoundExceptionOnUpdate() {
+        when(repository.getReferenceById(99L)).thenThrow(new jakarta.persistence.EntityNotFoundException());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.update(99L, new User()));
+    }
+
+    @Test
+    @DisplayName("Deve lançar DuplicateEntityException ao atualizar usuário com email duplicado")
+    void shouldThrowDuplicateEntityExceptionOnUpdateWithDuplicateEmail() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+        User update = new User(null, "novoEmail", "novaSenha", Role.ADMIN);
+
+        when(repository.getReferenceById(1L)).thenReturn(existing);
+        when(repository.findByEmail("novoEmail")).thenReturn(Optional.of(new User(2L, "novoEmail", "pass", Role.ADMIN)));
+
+        assertThrows(DuplicateEntityException.class, () -> service.update(1L, update));
+    }
+
+    @Test
+    @DisplayName("Deve alterar senha com sucesso usando changePassword")
+    void shouldChangePasswordSuccessfully() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(passwordEncoder.encode("novaSenha")).thenReturn("encodedNovaSenha");
+
+        service.changePassword(1L, "novaSenha");
+
+        assertEquals("encodedNovaSenha", existing.getPassword());
+        verify(repository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Deve lançar DatabaseException ao alterar senha nula usando changePassword")
+    void shouldThrowDatabaseExceptionOnChangePasswordWithNull() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThrows(DatabaseException.class, () -> service.changePassword(1L, null));
     }
 }

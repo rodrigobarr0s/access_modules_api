@@ -1,12 +1,7 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
+import io.github.rodrigobarr0s.access_modules_api.entity.ModuleIncompatibility;
 import io.github.rodrigobarr0s.access_modules_api.repository.ModuleRepository;
 import io.github.rodrigobarr0s.access_modules_api.service.ModuleService;
 import io.github.rodrigobarr0s.access_modules_api.service.exception.DatabaseException;
@@ -92,6 +88,16 @@ class ModuleServiceTest {
     }
 
     @Test
+    @DisplayName("Deve lançar DatabaseException ao salvar módulo incompatível consigo mesmo")
+    void save_shouldThrowDatabaseExceptionForSelfIncompatibility() {
+        Module module = new Module(null, "mod1", "desc1");
+        module.addIncompatibility(new ModuleIncompatibility(module, module));
+        when(repository.findByName("mod1")).thenReturn(Optional.empty());
+
+        assertThrows(DatabaseException.class, () -> service.save(module));
+    }
+
+    @Test
     @DisplayName("Deve remover módulo existente com sucesso")
     void delete_shouldRemoveModule() {
         when(repository.existsById(1L)).thenReturn(true);
@@ -141,5 +147,37 @@ class ModuleServiceTest {
 
         assertThrows(ResourceNotFoundException.class, () -> service.update(99L, new Module()));
     }
-}
 
+    @Test
+    @DisplayName("Deve adicionar incompatibilidade entre módulos diferentes com sucesso")
+    void addIncompatibility_shouldAddSuccessfully() {
+        Module modA = new Module(1L, "modA", "descA");
+        Module modB = new Module(2L, "modB", "descB");
+
+        when(repository.save(modA)).thenReturn(modA);
+
+        service.addIncompatibility(modA, modB);
+
+        assertEquals(1, modA.getIncompatibilities().size());
+        verify(repository).save(modA);
+    }
+
+    @Test
+    @DisplayName("Deve lançar DatabaseException ao tentar adicionar incompatibilidade consigo mesmo")
+    void addIncompatibility_shouldThrowDatabaseExceptionForSelf() {
+        Module modA = new Module(1L, "modA", "descA");
+
+        assertThrows(DatabaseException.class, () -> service.addIncompatibility(modA, modA));
+    }
+
+    @Test
+    @DisplayName("Deve lançar DuplicateEntityException ao tentar adicionar incompatibilidade já existente")
+    void addIncompatibility_shouldThrowDuplicateEntityException() {
+        Module modA = new Module(1L, "modA", "descA");
+        Module modB = new Module(2L, "modB", "descB");
+
+        modA.addIncompatibility(new ModuleIncompatibility(modA, modB));
+
+        assertThrows(DuplicateEntityException.class, () -> service.addIncompatibility(modA, modB));
+    }
+}

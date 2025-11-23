@@ -8,6 +8,9 @@ import java.util.Set;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "users")
@@ -20,9 +23,13 @@ public class User implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "O email é obrigatório")
+    @Email(message = "Formato de email inválido")
     @Column(nullable = false, unique = true)
     private String email;
 
+    @NotBlank(message = "A senha é obrigatória")
+    @Size(min = 6, message = "A senha deve ter pelo menos 6 caracteres")
     @Column(nullable = false)
     private String password;
 
@@ -31,7 +38,7 @@ public class User implements Serializable {
     private Integer role;
 
     // Relacionamento com UserModuleAccess
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<UserModuleAccess> accesses = new HashSet<>();
 
     // Construtores
@@ -40,6 +47,12 @@ public class User implements Serializable {
 
     public User(Long id, String email, String password, Role role) {
         this.id = id;
+        this.email = email;
+        this.password = password;
+        setRole(role);
+    }
+
+    public User(String email, String password, Role role) {
         this.email = email;
         this.password = password;
         setRole(role);
@@ -71,7 +84,7 @@ public class User implements Serializable {
     }
 
     public Role getRole() {
-        return role != null ? Role.valueOf(role) : null;
+        return role != null ? Role.fromCode(role) : null;
     }
 
     public void setRole(Role role) {

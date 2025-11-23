@@ -44,9 +44,11 @@ public class UserService {
                     throw new DuplicateEntityException("Usuário", user.getEmail());
                 });
 
-        // Criptografa a senha antes de salvar
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new DatabaseException("Senha não pode ser nula ou vazia");
+        }
 
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return repository.save(user);
     }
 
@@ -73,15 +75,29 @@ public class UserService {
         }
     }
 
-    private void updateData(User entity, User obj) {
-        entity.setEmail(Objects.requireNonNullElse(obj.getEmail(), entity.getEmail()));
+    @Transactional
+    public void changePassword(Long id, String newPassword) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário", "id=" + id));
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new DatabaseException("Senha não pode ser nula ou vazia");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        repository.save(user);
+    }
 
-        if (obj.getPassword() != null) {
-            // Criptografa a nova senha
+    private void updateData(User entity, User obj) {
+        if (obj.getEmail() != null && !obj.getEmail().equals(entity.getEmail())) {
+            repository.findByEmail(obj.getEmail())
+                    .ifPresent(u -> { throw new DuplicateEntityException("Usuário", obj.getEmail()); });
+            entity.setEmail(obj.getEmail());
+        }
+
+        if (obj.getPassword() != null && !obj.getPassword().isBlank()) {
             entity.setPassword(passwordEncoder.encode(obj.getPassword()));
         }
 
         entity.setRole(Objects.requireNonNullElse(obj.getRole(), entity.getRole()));
     }
-
 }
+

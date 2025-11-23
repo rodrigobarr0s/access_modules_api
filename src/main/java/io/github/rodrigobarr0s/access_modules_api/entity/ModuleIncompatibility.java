@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "module_incompatibility", uniqueConstraints = @UniqueConstraint(columnNames = { "module_id",
@@ -18,19 +19,27 @@ public class ModuleIncompatibility implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @NotNull(message = "O módulo principal é obrigatório")
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
 
-    @ManyToOne
+    @NotNull(message = "O módulo incompatível é obrigatório")
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "incompatible_module_id", nullable = false)
     private Module incompatibleModule;
 
+    // Construtores
     public ModuleIncompatibility() {
     }
 
     public ModuleIncompatibility(Long id, Module module, Module incompatibleModule) {
         this.id = id;
+        this.module = module;
+        this.incompatibleModule = incompatibleModule;
+    }
+
+    public ModuleIncompatibility(Module module, Module incompatibleModule) {
         this.module = module;
         this.incompatibleModule = incompatibleModule;
     }

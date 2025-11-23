@@ -21,7 +21,7 @@ public class ModuleIncompatibilityService {
     private final ModuleRepository moduleRepository;
 
     public ModuleIncompatibilityService(ModuleIncompatibilityRepository repository,
-            ModuleRepository moduleRepository) {
+                                        ModuleRepository moduleRepository) {
         this.repository = repository;
         this.moduleRepository = moduleRepository;
     }
@@ -45,14 +45,16 @@ public class ModuleIncompatibilityService {
         validateModuleExists(module);
         validateModuleExists(other);
 
+        if (module.equals(other)) {
+            throw new DatabaseException("Um módulo não pode ser incompatível consigo mesmo");
+        }
+
         if (existsAlready(module, other)) {
             throw new DuplicateEntityException("Incompatibilidade já cadastrada",
                     "módulo=" + module.getName() + ", incompatível=" + other.getName());
         }
 
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        incompatibility.setModule(module);
-        incompatibility.setIncompatibleModule(other);
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility(module, other);
         return repository.save(incompatibility);
     }
 
@@ -79,3 +81,4 @@ public class ModuleIncompatibilityService {
         return repository.existsByModuleAndIncompatibleModule(module, other);
     }
 }
+

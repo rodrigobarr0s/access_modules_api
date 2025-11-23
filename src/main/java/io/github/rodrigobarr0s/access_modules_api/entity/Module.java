@@ -7,6 +7,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "modules")
@@ -19,22 +21,25 @@ public class Module implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @NotBlank(message = "O nome do módulo é obrigatório")
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
 
+    @Size(max = 500, message = "A descrição deve ter no máximo 500 caracteres")
     @Column(length = 500)
     private String description;
 
     // Relacionamento com UserModuleAccess
-    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<UserModuleAccess> accesses = new HashSet<>();
 
     // Relacionamento com incompatibilidades
-    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<ModuleIncompatibility> incompatibilities = new HashSet<>();
 
     // Construtores
-    public Module() {}
+    public Module() {
+    }
 
     public Module(Long id, String name, String description) {
         this.id = id;
@@ -42,18 +47,43 @@ public class Module implements Serializable {
         this.description = description;
     }
 
+    public Module(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
     // Getters e Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public Set<UserModuleAccess> getAccesses() { return accesses; }
-    public Set<ModuleIncompatibility> getIncompatibilities() { return incompatibilities; }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Set<UserModuleAccess> getAccesses() {
+        return accesses;
+    }
+
+    public Set<ModuleIncompatibility> getIncompatibilities() {
+        return incompatibilities;
+    }
 
     // Métodos auxiliares para manter consistência nos relacionamentos
     public void addAccess(UserModuleAccess access) {
@@ -79,18 +109,21 @@ public class Module implements Serializable {
     // equals e hashCode baseados em id
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Module)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Module))
+            return false;
         Module module = (Module) o;
         return Objects.equals(id, module.id);
     }
 
     @Override
-    public int hashCode() { return Objects.hash(id); }
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 
     @Override
     public String toString() {
         return "Module{id=" + id + ", name='" + name + "'}";
     }
 }
-

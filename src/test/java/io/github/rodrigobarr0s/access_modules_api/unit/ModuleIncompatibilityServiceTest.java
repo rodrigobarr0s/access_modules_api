@@ -1,12 +1,7 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -67,9 +62,7 @@ class ModuleIncompatibilityServiceTest {
     void isIncompatible_shouldReturnTrue() {
         Module module = new Module(1L, "mod1", "desc1");
         Module other = new Module(2L, "mod2", "desc2");
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        incompatibility.setModule(module);
-        incompatibility.setIncompatibleModule(other);
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility(module, other);
 
         when(moduleRepository.existsById(1L)).thenReturn(true);
         when(moduleRepository.existsById(2L)).thenReturn(true);
@@ -78,6 +71,21 @@ class ModuleIncompatibilityServiceTest {
         boolean result = service.isIncompatible(module, other);
 
         assertTrue(result);
+    }
+
+    @Test
+    @DisplayName("Deve retornar false quando módulos não forem incompatíveis")
+    void isIncompatible_shouldReturnFalse() {
+        Module module = new Module(1L, "mod1", "desc1");
+        Module other = new Module(2L, "mod2", "desc2");
+
+        when(moduleRepository.existsById(1L)).thenReturn(true);
+        when(moduleRepository.existsById(2L)).thenReturn(true);
+        when(repository.findByModule(module)).thenReturn(Arrays.asList()); // sem incompatibilidades
+
+        boolean result = service.isIncompatible(module, other);
+
+        assertFalse(result);
     }
 
     @Test
@@ -90,10 +98,7 @@ class ModuleIncompatibilityServiceTest {
         when(moduleRepository.existsById(2L)).thenReturn(true);
         when(repository.existsByModuleAndIncompatibleModule(module, other)).thenReturn(false);
 
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        incompatibility.setModule(module);
-        incompatibility.setIncompatibleModule(other);
-
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility(module, other);
         when(repository.save(any(ModuleIncompatibility.class))).thenReturn(incompatibility);
 
         ModuleIncompatibility result = service.addIncompatibility(module, other);
@@ -114,6 +119,16 @@ class ModuleIncompatibilityServiceTest {
         when(repository.existsByModuleAndIncompatibleModule(module, other)).thenReturn(true);
 
         assertThrows(DuplicateEntityException.class, () -> service.addIncompatibility(module, other));
+    }
+
+    @Test
+    @DisplayName("Deve lançar DatabaseException ao tentar adicionar incompatibilidade consigo mesmo")
+    void addIncompatibility_shouldThrowDatabaseExceptionForSelf() {
+        Module module = new Module(1L, "mod1", "desc1");
+
+        when(moduleRepository.existsById(1L)).thenReturn(true);
+
+        assertThrows(DatabaseException.class, () -> service.addIncompatibility(module, module));
     }
 
     @Test

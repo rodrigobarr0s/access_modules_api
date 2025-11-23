@@ -48,7 +48,13 @@ databaseChangeLog:
       context: seed
 
   - include:
-      file: migrations/009-insert-user-module-access.sql
+      file: migrations/009-insert-module-incompatibilities.sql
+      relativeToChangelogFile: true
+      labels: module_incompatibility
+      context: seed
+
+  - include:
+      file: migrations/010-insert-user-module-access.sql
       relativeToChangelogFile: true
       labels: user_module_access
       context: seed

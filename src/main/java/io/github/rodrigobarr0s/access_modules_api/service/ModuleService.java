@@ -1,6 +1,7 @@
 package io.github.rodrigobarr0s.access_modules_api.service;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
+import io.github.rodrigobarr0s.access_modules_api.entity.ModuleIncompatibility;
 import io.github.rodrigobarr0s.access_modules_api.repository.ModuleRepository;
 import io.github.rodrigobarr0s.access_modules_api.service.exception.DatabaseException;
 import io.github.rodrigobarr0s.access_modules_api.service.exception.DuplicateEntityException;
@@ -39,6 +40,7 @@ public class ModuleService {
                 .ifPresent(m -> {
                     throw new DuplicateEntityException("Módulo", module.getName());
                 });
+        validateIncompatibilities(module);
         return repository.save(module);
     }
 
@@ -59,14 +61,46 @@ public class ModuleService {
         try {
             Module entity = repository.getReferenceById(id);
             updateData(entity, obj);
+            validateIncompatibilities(entity);
             return repository.save(entity);
         } catch (EntityNotFoundException e) {
             throw new ResourceNotFoundException("Módulo", "id=" + id);
         }
     }
 
+    /**
+     * Método auxiliar para adicionar incompatibilidade entre módulos
+     * evitando redundância inversa (A-B e B-A duplicados).
+     */
+    @Transactional
+    public void addIncompatibility(Module module, Module incompatible) {
+        if (module.equals(incompatible)) {
+            throw new DatabaseException("Um módulo não pode ser incompatível consigo mesmo");
+        }
+
+        boolean alreadyExists = module.getIncompatibilities().stream()
+                .anyMatch(inc -> inc.getIncompatibleModule().equals(incompatible));
+
+        if (alreadyExists) {
+            throw new DuplicateEntityException("Incompatibilidade",
+                    module.getName() + " x " + incompatible.getName());
+        }
+
+        ModuleIncompatibility inc = new ModuleIncompatibility(module, incompatible);
+        module.addIncompatibility(inc);
+        repository.save(module);
+    }
+
     private void updateData(Module entity, Module obj) {
         entity.setName(Objects.requireNonNullElse(obj.getName(), entity.getName()));
         entity.setDescription(Objects.requireNonNullElse(obj.getDescription(), entity.getDescription()));
+    }
+
+    private void validateIncompatibilities(Module module) {
+        module.getIncompatibilities().forEach(inc -> {
+            if (inc.getModule().equals(inc.getIncompatibleModule())) {
+                throw new DatabaseException("Um módulo não pode ser incompatível consigo mesmo");
+            }
+        });
     }
 }
