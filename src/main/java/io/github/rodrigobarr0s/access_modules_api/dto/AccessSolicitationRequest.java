@@ -1,10 +1,64 @@
 package io.github.rodrigobarr0s.access_modules_api.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
-public record AccessSolicitationRequest(
-        @NotNull Long userId,
-        @NotNull Long moduleId,
-        @NotNull @Size(min = 5, max = 255) String justificativa) {
+public class AccessSolicitationRequest {
+
+        @NotNull(message = "O usuário é obrigatório")
+        private Long userId;
+
+        @NotNull(message = "O módulo é obrigatório")
+        private Long moduleId;
+
+        @NotBlank(message = "A justificativa não pode estar vazia")
+        private String justificativa;
+
+        private boolean urgente;
+
+        public AccessSolicitationRequest() {
+        }
+
+        public AccessSolicitationRequest(@NotNull(message = "O usuário é obrigatório") Long userId,
+                        @NotNull(message = "O módulo é obrigatório") Long moduleId,
+                        @NotBlank(message = "A justificativa não pode estar vazia") String justificativa,
+                        boolean urgente) {
+                this.userId = userId;
+                this.moduleId = moduleId;
+                this.justificativa = justificativa;
+                this.urgente = urgente;
+        }
+
+        // Getters e Setters
+        public Long getUserId() {
+                return userId;
+        }
+
+        public void setUserId(Long userId) {
+                this.userId = userId;
+        }
+
+        public Long getModuleId() {
+                return moduleId;
+        }
+
+        public void setModuleId(Long moduleId) {
+                this.moduleId = moduleId;
+        }
+
+        public String getJustificativa() {
+                return justificativa;
+        }
+
+        public void setJustificativa(String justificativa) {
+                this.justificativa = justificativa;
+        }
+
+        public boolean isUrgente() {
+                return urgente;
+        }
+
+        public void setUrgente(boolean urgente) {
+                this.urgente = urgente;
+        }
 }
