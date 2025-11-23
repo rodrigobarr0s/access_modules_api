@@ -2,6 +2,8 @@
 # docker compose down
 # docker compose stop
 # docker compose start
+# docker logs <nome-ou-id-do-container> (log de saida)
+# docker logs -f <nome-ou-id-do-container> (log em tempo de execução)
 services:
   postgres:
     image: postgres:17
@@ -25,7 +27,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
-      JWT_SECRET: my-super-secret-key
+      # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
+      JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
       LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
@@ -41,7 +44,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
-      JWT_SECRET: my-super-secret-key
+      # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
+      JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
       LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
@@ -57,7 +61,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/accessdb
       DB_USERNAME: accessuser
       DB_PASSWORD: accesspass
-      JWT_SECRET: my-super-secret-key
+      # JWT_SECRET precisa ter pelo menos 32 caracteres (256 bits)
+      JWT_SECRET: supersecretprodkeysupersecretprodkeysupersecretprodkey
       JWT_EXPIRATION: 900000
       LIQUIBASE_CONTEXTS: setup,seed
     depends_on:

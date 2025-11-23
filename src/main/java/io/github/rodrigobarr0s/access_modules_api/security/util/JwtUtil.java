@@ -19,7 +19,8 @@ public class JwtUtil {
     private final long expiration;
 
     public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.expiration}") long expiration) {
+            @Value("${jwt.expiration}") long expiration) {
+        // Observação: secret deve ter no mínimo 256 bits (32 caracteres)
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.expiration = expiration;
     }
