@@ -21,11 +21,13 @@ services:
     build: .
     container_name: app1
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
-      SPRING_DATASOURCE_USERNAME: accessuser
-      SPRING_DATASOURCE_PASSWORD: accesspass
       SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/accessdb
+      DB_USERNAME: accessuser
+      DB_PASSWORD: accesspass
       JWT_SECRET: my-super-secret-key
+      JWT_EXPIRATION: 900000
+      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
@@ -35,11 +37,13 @@ services:
     build: .
     container_name: app2
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
-      SPRING_DATASOURCE_USERNAME: accessuser
-      SPRING_DATASOURCE_PASSWORD: accesspass
       SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/accessdb
+      DB_USERNAME: accessuser
+      DB_PASSWORD: accesspass
       JWT_SECRET: my-super-secret-key
+      JWT_EXPIRATION: 900000
+      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
@@ -49,11 +53,13 @@ services:
     build: .
     container_name: app3
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/accessdb
-      SPRING_DATASOURCE_USERNAME: accessuser
-      SPRING_DATASOURCE_PASSWORD: accesspass
       SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/accessdb
+      DB_USERNAME: accessuser
+      DB_PASSWORD: accesspass
       JWT_SECRET: my-super-secret-key
+      JWT_EXPIRATION: 900000
+      LIQUIBASE_CONTEXTS: setup,seed
     depends_on:
       - postgres
     networks:
@@ -92,4 +98,5 @@ volumes:
 networks:
   appnet:
     driver: bridge
+
 
