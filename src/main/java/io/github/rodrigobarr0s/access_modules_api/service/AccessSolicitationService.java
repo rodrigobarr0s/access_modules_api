@@ -51,8 +51,11 @@ public class AccessSolicitationService {
 
     @Transactional
     public AccessSolicitation create(AccessSolicitationRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário", request.getUserId().toString()));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário", email));
 
         Module module = moduleRepository.findById(request.getModuleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Módulo", request.getModuleId().toString()));

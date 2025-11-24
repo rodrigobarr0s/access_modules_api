@@ -28,24 +28,24 @@ class UserServiceIntegrationTest {
     @Test
     @DisplayName("Deve salvar e recuperar usuário com sucesso no banco H2")
     void shouldSaveAndRetrieveUser() {
-        User user = new User(null, "rodrigo", "123", Role.ADMIN);
+        User user = new User(null, "rodrigo@test.com", "123456", Role.ADMIN);
         User saved = service.save(user);
 
         assertNotNull(saved.getId());
 
-        User found = service.findByEmail("rodrigo");
-        assertEquals("rodrigo", found.getEmail());
+        User found = service.findByEmail("rodrigo@test.com");
+        assertEquals("rodrigo@test.com", found.getEmail());
         assertEquals(Role.ADMIN, found.getRole());
 
         // senha deve estar criptografada
         assertNotNull(found.getPassword());
-        assertNotEquals("123", found.getPassword());
+        assertNotEquals("123456", found.getPassword());
     }
 
     @Test
     @DisplayName("Deve lançar DuplicateEntityException ao salvar usuário já existente no banco")
     void shouldThrowDuplicateEntityException() {
-        User user = new User(null, "maria", "abc", Role.RH);
+        User user = new User(null, "maria@test.com", "abcdef", Role.RH);
         service.save(user);
 
         assertThrows(DuplicateEntityException.class, () -> service.save(user));
@@ -54,36 +54,36 @@ class UserServiceIntegrationTest {
     @Test
     @DisplayName("Deve listar todos os usuários salvos")
     void shouldFindAllUsers() {
-        service.save(new User(null, "joao", "123", Role.OPERACOES));
-        service.save(new User(null, "ana", "456", Role.ADMIN));
+        service.save(new User(null, "joao@test.com", "123456", Role.OPERACOES));
+        service.save(new User(null, "ana@test.com", "abcdef", Role.ADMIN));
 
         List<User> users = service.findAll();
 
         assertTrue(users.size() >= 2);
-        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("joao")));
-        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("ana")));
+        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("joao@test.com")));
+        assertTrue(users.stream().anyMatch(u -> u.getEmail().equals("ana@test.com")));
     }
 
     @Test
     @DisplayName("Deve atualizar dados de usuário existente e criptografar nova senha")
     void shouldUpdateUserSuccessfully() {
-        User user = service.save(new User(null, "carlos", "123", Role.AUDITOR));
+        User user = service.save(new User(null, "carlos@test.com", "123456", Role.AUDITOR));
 
-        User updated = new User(null, "carlos_updated", "456", Role.ADMIN);
+        User updated = new User(null, "carlos_updated@test.com", "abcdef", Role.ADMIN);
         User result = service.update(user.getId(), updated);
 
-        assertEquals("carlos_updated", result.getEmail());
+        assertEquals("carlos_updated@test.com", result.getEmail());
         assertEquals(Role.ADMIN, result.getRole());
 
         // senha deve estar criptografada
         assertNotNull(result.getPassword());
-        assertNotEquals("456", result.getPassword());
+        assertNotEquals("abcdef", result.getPassword());
     }
 
     @Test
     @DisplayName("Deve lançar ResourceNotFoundException ao tentar atualizar usuário inexistente")
     void shouldThrowResourceNotFoundExceptionOnUpdate() {
-        User updated = new User(null, "naoexiste", "123", Role.TI);
+        User updated = new User(null, "naoexiste@test.com", "123456", Role.TI);
 
         assertThrows(ResourceNotFoundException.class, () -> service.update(999L, updated));
     }
@@ -91,11 +91,11 @@ class UserServiceIntegrationTest {
     @Test
     @DisplayName("Deve deletar usuário existente com sucesso")
     void shouldDeleteUserSuccessfully() {
-        User user = service.save(new User(null, "delete_me", "123", Role.OPERACOES));
+        User user = service.save(new User(null, "delete_me@test.com", "123456", Role.OPERACOES));
 
         service.delete(user.getId());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.findByEmail("delete_me"));
+        assertThrows(ResourceNotFoundException.class, () -> service.findByEmail("delete_me@test.com"));
     }
 
     @Test

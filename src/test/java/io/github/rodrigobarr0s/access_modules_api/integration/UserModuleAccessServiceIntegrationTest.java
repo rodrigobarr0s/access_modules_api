@@ -37,7 +37,7 @@ class UserModuleAccessServiceIntegrationTest {
     @Test
     @DisplayName("Deve conceder acesso e recuperar por usuário")
     void grantAccessAndFindByUser() {
-        User user = userService.save(new User(null, "user1", "123456", Role.ADMIN));
+        User user = userService.save(new User(null, "user1@test.com", "123456", Role.ADMIN));
         Module module = moduleService.save(new Module(null, "mod1", "desc1"));
 
         UserModuleAccess access = accessService.grantAccess(user, module);
@@ -54,7 +54,7 @@ class UserModuleAccessServiceIntegrationTest {
     @Test
     @DisplayName("Deve lançar DuplicateEntityException ao conceder acesso duplicado")
     void grantAccess_shouldThrowDuplicateEntityException() {
-        User user = userService.save(new User(null, "user2", "123456", Role.RH));
+        User user = userService.save(new User(null, "user2@test.com", "123456", Role.RH));
         Module module = moduleService.save(new Module(null, "mod2", "desc2"));
 
         accessService.grantAccess(user, module);
@@ -65,7 +65,7 @@ class UserModuleAccessServiceIntegrationTest {
     @Test
     @DisplayName("Deve recuperar acessos por módulo")
     void findByModule_shouldReturnAccesses() {
-        User user = userService.save(new User(null, "user3", "123456", Role.OPERACOES));
+        User user = userService.save(new User(null, "user3@test.com", "123456", Role.OPERACOES));
         Module module = moduleService.save(new Module(null, "mod3", "desc3"));
 
         accessService.grantAccess(user, module);
@@ -77,7 +77,7 @@ class UserModuleAccessServiceIntegrationTest {
     @Test
     @DisplayName("Deve revogar acesso existente")
     void revokeAccess_shouldDeleteAccess() {
-        User user = userService.save(new User(null, "user4", "123456", Role.TI));
+        User user = userService.save(new User(null, "user4@test.com", "123456", Role.TI));
         Module module = moduleService.save(new Module(null, "mod4", "desc4"));
 
         UserModuleAccess access = accessService.grantAccess(user, module);
@@ -94,8 +94,8 @@ class UserModuleAccessServiceIntegrationTest {
     void findByUser_shouldThrowResourceNotFound() {
         User fakeUser = new User();
         fakeUser.setId(999L);
-        fakeUser.setEmail("ghost");
-        fakeUser.setPassword("123");
+        fakeUser.setEmail("ghost@test.com"); // email válido
+        fakeUser.setPassword("123456");      // senha com 6 caracteres
         fakeUser.setRole(Role.AUDITOR);
 
         assertThrows(ResourceNotFoundException.class, () -> accessService.findByUser(fakeUser));

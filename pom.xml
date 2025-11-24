@@ -116,6 +116,9 @@
 			</plugin>
 
 			<!-- JaCoCo para cobertura mínima -->
+
+			 <!--mvn clean verify-->
+			 <!--mvn jacoco:report-->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>

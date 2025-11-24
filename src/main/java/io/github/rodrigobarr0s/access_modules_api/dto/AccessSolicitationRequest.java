@@ -5,60 +5,48 @@ import jakarta.validation.constraints.NotNull;
 
 public class AccessSolicitationRequest {
 
-        @NotNull(message = "O usuário é obrigatório")
-        private Long userId;
+    @NotNull(message = "O módulo é obrigatório")
+    private Long moduleId;
 
-        @NotNull(message = "O módulo é obrigatório")
-        private Long moduleId;
+    @NotBlank(message = "A justificativa não pode estar vazia")
+    private String justificativa;
 
-        @NotBlank(message = "A justificativa não pode estar vazia")
-        private String justificativa;
+    private boolean urgente;
 
-        private boolean urgente;
+    public AccessSolicitationRequest() {
+    }
 
-        public AccessSolicitationRequest() {
-        }
+    public AccessSolicitationRequest(
+            @NotNull(message = "O módulo é obrigatório") Long moduleId,
+            @NotBlank(message = "A justificativa não pode estar vazia") String justificativa,
+            boolean urgente) {
+        this.moduleId = moduleId;
+        this.justificativa = justificativa;
+        this.urgente = urgente;
+    }
 
-        public AccessSolicitationRequest(@NotNull(message = "O usuário é obrigatório") Long userId,
-                        @NotNull(message = "O módulo é obrigatório") Long moduleId,
-                        @NotBlank(message = "A justificativa não pode estar vazia") String justificativa,
-                        boolean urgente) {
-                this.userId = userId;
-                this.moduleId = moduleId;
-                this.justificativa = justificativa;
-                this.urgente = urgente;
-        }
+    // Getters e Setters
+    public Long getModuleId() {
+        return moduleId;
+    }
 
-        // Getters e Setters
-        public Long getUserId() {
-                return userId;
-        }
+    public void setModuleId(Long moduleId) {
+        this.moduleId = moduleId;
+    }
 
-        public void setUserId(Long userId) {
-                this.userId = userId;
-        }
+    public String getJustificativa() {
+        return justificativa;
+    }
 
-        public Long getModuleId() {
-                return moduleId;
-        }
+    public void setJustificativa(String justificativa) {
+        this.justificativa = justificativa;
+    }
 
-        public void setModuleId(Long moduleId) {
-                this.moduleId = moduleId;
-        }
+    public boolean isUrgente() {
+        return urgente;
+    }
 
-        public String getJustificativa() {
-                return justificativa;
-        }
-
-        public void setJustificativa(String justificativa) {
-                this.justificativa = justificativa;
-        }
-
-        public boolean isUrgente() {
-                return urgente;
-        }
-
-        public void setUrgente(boolean urgente) {
-                this.urgente = urgente;
-        }
+    public void setUrgente(boolean urgente) {
+        this.urgente = urgente;
+    }
 }
