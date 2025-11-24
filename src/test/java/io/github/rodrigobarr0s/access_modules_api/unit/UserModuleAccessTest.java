@@ -86,4 +86,62 @@ class UserModuleAccessTest {
         assertTrue(toString.contains("user@test.com"));
         assertTrue(toString.contains("Financeiro"));
     }
+
+    @Test
+    @DisplayName("Equals deve retornar true quando comparar o mesmo objeto")
+    void equalsShouldReturnTrueForSameObject() {
+        UserModuleAccess access = new UserModuleAccess();
+        assertTrue(access.equals(access));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false quando comparar com classe diferente")
+    void equalsShouldReturnFalseForDifferentClass() {
+        UserModuleAccess access = new UserModuleAccess();
+        assertFalse(access.equals("string"));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar true quando IDs são iguais")
+    void equalsShouldReturnTrueForSameId() {
+        UserModuleAccess a1 = new UserModuleAccess();
+        a1.setId(1L);
+        UserModuleAccess a2 = new UserModuleAccess();
+        a2.setId(1L);
+        assertTrue(a1.equals(a2));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false quando IDs são diferentes")
+    void equalsShouldReturnFalseForDifferentIds() {
+        UserModuleAccess a1 = new UserModuleAccess();
+        a1.setId(1L);
+        UserModuleAccess a2 = new UserModuleAccess();
+        a2.setId(2L);
+        assertFalse(a1.equals(a2));
+    }
+
+    @Test
+    @DisplayName("ToString deve lidar com user e module nulos")
+    void toStringShouldHandleNullUserAndModule() {
+        UserModuleAccess access = new UserModuleAccess();
+        String result = access.toString();
+        assertTrue(result.contains("null"));
+    }
+
+    @Test
+    @DisplayName("ToString deve incluir email e nome do módulo quando definidos")
+    void toStringShouldIncludeUserAndModule() {
+        User user = new User();
+        user.setEmail("teste@empresa.com");
+
+        Module module = new Module();
+        module.setName("Financeiro");
+
+        UserModuleAccess access = new UserModuleAccess(user, module);
+        String result = access.toString();
+
+        assertTrue(result.contains("teste@empresa.com"));
+        assertTrue(result.contains("Financeiro"));
+    }
 }

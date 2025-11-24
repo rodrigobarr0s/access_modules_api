@@ -83,4 +83,54 @@ class ModuleIncompatibilityTest {
         assertTrue(toString.contains("Financeiro"));
         assertTrue(toString.contains("RH"));
     }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando módulo é igual ao incompatível")
+    void shouldThrowExceptionWhenModuleEqualsIncompatible() {
+        Module m = new Module();
+        m.setId(1L);
+        m.setName("Financeiro");
+
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility(m, m);
+
+        assertThrows(IllegalArgumentException.class, incompatibility::validate);
+    }
+
+    @Test
+    @DisplayName("Não deve lançar exceção quando módulos são diferentes")
+    void shouldNotThrowWhenModulesAreDifferent() {
+        Module m1 = new Module();
+        m1.setId(1L);
+        m1.setName("Financeiro");
+
+        Module m2 = new Module();
+        m2.setId(2L);
+        m2.setName("RH");
+
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility(m1, m2);
+
+        assertDoesNotThrow(incompatibility::validate);
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar true quando comparar o mesmo objeto")
+    void equalsShouldReturnTrueWhenSameObject() {
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
+        assertTrue(incompatibility.equals(incompatibility));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false quando comparar com classe diferente")
+    void equalsShouldReturnFalseWhenDifferentClass() {
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
+        assertFalse(incompatibility.equals("string"));
+    }
+
+    @Test
+    @DisplayName("ToString deve lidar com módulos nulos")
+    void toStringShouldHandleNullModules() {
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
+        String result = incompatibility.toString();
+        assertTrue(result.contains("null"));
+    }
 }

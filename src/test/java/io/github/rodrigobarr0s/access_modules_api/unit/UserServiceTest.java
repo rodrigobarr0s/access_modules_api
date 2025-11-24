@@ -1,6 +1,7 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.util.Optional;
@@ -154,7 +155,8 @@ class UserServiceTest {
         User update = new User(null, "novoEmail", "novaSenha", Role.ADMIN);
 
         when(repository.getReferenceById(1L)).thenReturn(existing);
-        when(repository.findByEmail("novoEmail")).thenReturn(Optional.of(new User(2L, "novoEmail", "pass", Role.ADMIN)));
+        when(repository.findByEmail("novoEmail"))
+                .thenReturn(Optional.of(new User(2L, "novoEmail", "pass", Role.ADMIN)));
 
         assertThrows(DuplicateEntityException.class, () -> service.update(1L, update));
     }
@@ -182,4 +184,73 @@ class UserServiceTest {
 
         assertThrows(DatabaseException.class, () -> service.changePassword(1L, null));
     }
+
+    @Test
+    @DisplayName("Deve lançar DatabaseException ao salvar usuário com senha em branco")
+    void shouldThrowDatabaseExceptionOnSaveWithBlankPassword() {
+        User user = new User(null, "rodrigo", "   ", Role.ADMIN);
+        when(repository.findByEmail("rodrigo")).thenReturn(Optional.empty());
+        assertThrows(DatabaseException.class, () -> service.save(user));
+    }
+
+    @Test
+    @DisplayName("Deve atualizar email quando novo email é válido e não duplicado")
+    void shouldUpdateUserWithNewEmail() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+        User update = new User(null, "novoEmail", null, Role.ADMIN);
+
+        when(repository.getReferenceById(1L)).thenReturn(existing);
+        when(repository.findByEmail("novoEmail")).thenReturn(Optional.empty());
+        when(repository.save(existing)).thenReturn(existing);
+
+        User updated = service.update(1L, update);
+
+        assertEquals("novoEmail", updated.getEmail());
+        verify(repository).save(existing);
+    }
+
+    @Test
+    @DisplayName("Deve manter senha antiga quando nova senha é nula")
+    void shouldKeepOldPasswordWhenNewPasswordIsNull() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+        User update = new User(null, "rodrigo", null, Role.ADMIN);
+
+        when(repository.getReferenceById(1L)).thenReturn(existing);
+        when(repository.save(existing)).thenReturn(existing);
+
+        User updated = service.update(1L, update);
+
+        assertEquals("encoded123", updated.getPassword());
+    }
+
+    @Test
+    @DisplayName("Deve manter role antiga quando nova role é nula")
+    void shouldKeepOldRoleWhenNewRoleIsNull() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+        User update = new User(null, "rodrigo", "novaSenha", null);
+
+        when(repository.getReferenceById(1L)).thenReturn(existing);
+        when(passwordEncoder.encode("novaSenha")).thenReturn("encodedNovaSenha");
+        when(repository.save(existing)).thenReturn(existing);
+
+        User updated = service.update(1L, update);
+
+        assertEquals(Role.ADMIN, updated.getRole());
+    }
+
+    @Test
+    @DisplayName("Deve lançar ResourceNotFoundException ao alterar senha de usuário inexistente")
+    void shouldThrowResourceNotFoundExceptionOnChangePasswordUserNotFound() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class, () -> service.changePassword(99L, "novaSenha"));
+    }
+
+    @Test
+    @DisplayName("Deve lançar DatabaseException ao alterar senha em branco usando changePassword")
+    void shouldThrowDatabaseExceptionOnChangePasswordWithBlank() {
+        User existing = new User(1L, "rodrigo", "encoded123", Role.ADMIN);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        assertThrows(DatabaseException.class, () -> service.changePassword(1L, "   "));
+    }
+
 }

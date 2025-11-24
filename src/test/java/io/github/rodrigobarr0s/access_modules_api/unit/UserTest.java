@@ -80,4 +80,57 @@ class UserTest {
         assertTrue(toString.contains("user@test.com"));
         assertTrue(toString.contains("ADMIN"));
     }
+
+    @Test
+    @DisplayName("Deve retornar null quando role não está definido")
+    void getRoleShouldReturnNullWhenRoleIsNull() {
+        User user = new User();
+        assertNull(user.getRole());
+    }
+
+    @Test
+    @DisplayName("Deve atribuir role corretamente quando não é null")
+    void setRoleShouldAssignCode() {
+        User user = new User();
+        user.setRole(Role.FINANCEIRO);
+        assertEquals(Role.FINANCEIRO, user.getRole());
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar true quando comparar o mesmo objeto")
+    void equalsShouldReturnTrueForSameObject() {
+        User user = new User();
+        assertTrue(user.equals(user));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false quando comparar com classe diferente")
+    void equalsShouldReturnFalseForDifferentClass() {
+        User user = new User();
+        assertFalse(user.equals("string"));
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false quando IDs são diferentes")
+    void equalsShouldReturnFalseForDifferentIds() {
+        User u1 = new User(1L, "a@a.com", "123456", Role.RH);
+        User u2 = new User(2L, "b@b.com", "123456", Role.RH);
+        assertFalse(u1.equals(u2));
+    }
+
+    @Test
+    @DisplayName("ToString deve incluir role quando definido")
+    void toStringShouldIncludeRole() {
+        User user = new User(1L, "a@a.com", "123456", Role.RH);
+        String result = user.toString();
+        assertTrue(result.contains("RH"));
+    }
+
+    @Test
+    @DisplayName("ToString deve lidar com role null")
+    void toStringShouldHandleNullRole() {
+        User user = new User();
+        String result = user.toString();
+        assertTrue(result.contains("null"));
+    }
 }
