@@ -31,6 +31,15 @@ public class UserModuleAccess implements Serializable {
     @Column(nullable = false)
     private LocalDateTime grantedAt = LocalDateTime.now();
 
+    public UserModuleAccess() {
+    }
+
+    public UserModuleAccess(User user, Module module) {
+        this.user = user;
+        this.module = module;
+        this.grantedAt = LocalDateTime.now();
+    }
+
     // Getters e Setters
     public Long getId() {
         return id;
@@ -81,7 +90,9 @@ public class UserModuleAccess implements Serializable {
 
     @Override
     public String toString() {
-        return "UserModuleAccess{id=" + id + ", user=" + user.getEmail() +
-                ", module=" + module.getName() + ", grantedAt=" + grantedAt + "}";
+        return "UserModuleAccess{id=" + id +
+                ", user=" + (user != null ? user.getEmail() : "null") +
+                ", module=" + (module != null ? module.getName() : "null") +
+                ", grantedAt=" + grantedAt + "}";
     }
 }

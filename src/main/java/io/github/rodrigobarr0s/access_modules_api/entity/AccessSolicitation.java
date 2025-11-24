@@ -53,15 +53,18 @@ public class AccessSolicitation implements Serializable {
     @Column(length = 200)
     private String cancelReason;
 
+    @Column(length = 500)
+    private String negationReason;
+
     // Construtores
     public AccessSolicitation() {
     }
 
     public AccessSolicitation(Long id, User user, Module module, String protocolo,
-                              SolicitationStatus status, String justificativa,
-                              boolean urgente, LocalDateTime createdAt,
-                              LocalDateTime updatedAt, LocalDateTime expiresAt,
-                              String cancelReason) {
+            SolicitationStatus status, String justificativa,
+            boolean urgente, LocalDateTime createdAt,
+            LocalDateTime updatedAt, LocalDateTime expiresAt,
+            String cancelReason, String negationReason) {
         this.id = id;
         this.user = user;
         this.module = module;
@@ -73,6 +76,7 @@ public class AccessSolicitation implements Serializable {
         this.updatedAt = updatedAt;
         this.expiresAt = expiresAt;
         this.cancelReason = cancelReason;
+        this.negationReason = negationReason;
     }
 
     @PrePersist
@@ -177,11 +181,21 @@ public class AccessSolicitation implements Serializable {
         this.cancelReason = cancelReason;
     }
 
+    public String getNegationReason() {
+        return negationReason;
+    }
+
+    public void setNegationReason(String negationReason) {
+        this.negationReason = negationReason;
+    }
+
     // equals e hashCode baseados em id
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AccessSolicitation)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof AccessSolicitation))
+            return false;
         AccessSolicitation that = (AccessSolicitation) o;
         return Objects.equals(id, that.id);
     }
@@ -206,6 +220,7 @@ public class AccessSolicitation implements Serializable {
                 ", updatedAt=" + updatedAt +
                 ", expiresAt=" + expiresAt +
                 ", cancelReason='" + cancelReason + '\'' +
+                ", negationReason='" + negationReason + '\'' +
                 '}';
     }
 }

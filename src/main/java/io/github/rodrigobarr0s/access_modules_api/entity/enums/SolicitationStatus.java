@@ -1,14 +1,13 @@
 package io.github.rodrigobarr0s.access_modules_api.entity.enums;
 
 public enum SolicitationStatus {
-    PENDING(1),
-    APPROVED(2),
-    REJECTED(3),
-    CANCELED(4);
+    ATIVO(1),
+    NEGADO(2),
+    CANCELADO(3);
 
     private final int code;
 
-    private SolicitationStatus(int code) {
+    SolicitationStatus(int code) {
         this.code = code;
     }
 

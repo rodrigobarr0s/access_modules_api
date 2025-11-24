@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationRequest;
 import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationResponse;
+import io.github.rodrigobarr0s.access_modules_api.dto.CancelRequest;
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
 import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
@@ -54,14 +55,16 @@ public class AccessSolicitationController {
     }
 
     @Operation(summary = "Cancelar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
-    @PutMapping("/{protocolo}/cancel")
-    public ResponseEntity<AccessSolicitationResponse> cancel(@PathVariable String protocolo, @RequestParam String reason) {
-        AccessSolicitation solicitation = service.cancel(protocolo, reason);
+    @PatchMapping("/{protocolo}/cancel")
+    public ResponseEntity<AccessSolicitationResponse> cancel(
+            @PathVariable String protocolo,
+            @Valid @RequestBody CancelRequest cancelRequest) {
+        AccessSolicitation solicitation = service.cancel(protocolo, cancelRequest.getReason());
         return ResponseEntity.ok(new AccessSolicitationResponse(solicitation));
     }
 
     @Operation(summary = "Renovar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
-    @PutMapping("/{protocolo}/renew")
+    @PatchMapping("/{protocolo}/renew")
     public ResponseEntity<AccessSolicitationResponse> renew(@PathVariable String protocolo) {
         AccessSolicitation solicitation = service.renew(protocolo);
         return ResponseEntity.ok(new AccessSolicitationResponse(solicitation));
