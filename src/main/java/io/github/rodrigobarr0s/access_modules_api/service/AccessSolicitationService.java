@@ -21,6 +21,7 @@ import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationRequest;
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.HistoryAction;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
 import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
@@ -77,8 +78,6 @@ public class AccessSolicitationService {
             solicitation.setModule(module);
             solicitation.setJustificativa(request.getJustificativa());
             solicitation.setUrgente(request.isUrgente());
-            solicitation.setCreatedAt(LocalDateTime.now());
-            solicitation.setUpdatedAt(LocalDateTime.now());
             solicitation.setExpiresAt(LocalDateTime.now().plusDays(180));
             solicitation.setProtocolo(generateProtocolo());
 
@@ -86,9 +85,11 @@ public class AccessSolicitationService {
             String motivoNegacao = validarSolicitacao(user, module, request.getJustificativa());
             if (motivoNegacao == null) {
                 solicitation.setStatus(SolicitationStatus.ATIVO);
+                solicitation.addHistory(HistoryAction.CRIADO, null);
             } else {
                 solicitation.setStatus(SolicitationStatus.NEGADO);
                 solicitation.setNegationReason(motivoNegacao);
+                solicitation.addHistory(HistoryAction.NEGADO, motivoNegacao);
             }
 
             solicitations.add(repository.save(solicitation));
@@ -234,7 +235,7 @@ public class AccessSolicitationService {
 
     @Transactional(readOnly = true)
     public AccessSolicitation findByProtocolo(String protocolo) {
-        AccessSolicitation solicitation = repository.findByProtocolo(protocolo)
+        AccessSolicitation solicitation = repository.findByProtocoloWithHistory(protocolo)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação", protocolo));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -252,7 +253,10 @@ public class AccessSolicitationService {
         AccessSolicitation solicitation = findByProtocolo(protocolo);
         solicitation.setStatus(SolicitationStatus.CANCELADO);
         solicitation.setCancelReason(reason);
-        solicitation.setUpdatedAt(LocalDateTime.now());
+
+        // registra histórico
+        solicitation.addHistory(HistoryAction.CANCELADO, reason);
+
         return repository.save(solicitation);
     }
 
@@ -260,18 +264,23 @@ public class AccessSolicitationService {
     public AccessSolicitation renew(String protocolo) {
         AccessSolicitation solicitation = findByProtocolo(protocolo);
         solicitation.setExpiresAt(LocalDateTime.now().plusDays(180));
-        solicitation.setUpdatedAt(LocalDateTime.now());
         solicitation.setProtocolo(generateProtocolo());
 
-        String motivoNegacao = validarSolicitacao(solicitation.getUser(), solicitation.getModule(),
+        String motivoNegacao = validarSolicitacao(
+                solicitation.getUser(),
+                solicitation.getModule(),
                 solicitation.getJustificativa());
+
         if (motivoNegacao == null) {
             solicitation.setStatus(SolicitationStatus.ATIVO);
+            solicitation.addHistory(HistoryAction.RENOVADO, null);
         } else {
             solicitation.setStatus(SolicitationStatus.NEGADO);
             solicitation.setNegationReason(motivoNegacao);
+            solicitation.addHistory(HistoryAction.NEGADO, motivoNegacao);
         }
 
         return repository.save(solicitation);
     }
+
 }

@@ -15,7 +15,7 @@ CREATE TABLE access_solicitation (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
     cancel_reason VARCHAR(200),
-    negation_reason VARCHAR(255), 
+    negation_reason VARCHAR(500), 
     CONSTRAINT pk_access_solicitation PRIMARY KEY (id),
     CONSTRAINT fk_access_solicitation_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_access_solicitation_module FOREIGN KEY (module_id) REFERENCES modules(id)

@@ -35,6 +35,13 @@ databaseChangeLog:
       labels: access_solicitation
       context: setup
 
+  # Nova migration para histórico
+  - include:
+      file: migrations/011-create-solicitation-history.sql
+      relativeToChangelogFile: true
+      labels: solicitation_history
+      context: setup
+
   - include:
       file: migrations/007-insert-initial-users.sql
       relativeToChangelogFile: true

@@ -20,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationCreateResponse;
+import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationDetailResponse;
+import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationListResponse;
 import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationRequest;
-import io.github.rodrigobarr0s.access_modules_api.dto.AccessSolicitationResponse;
 import io.github.rodrigobarr0s.access_modules_api.dto.CancelRequest;
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
@@ -42,18 +44,20 @@ public class AccessSolicitationController {
 
     @Operation(summary = "Criar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
     @PostMapping
-    public ResponseEntity<List<AccessSolicitationResponse>> create(
+    public ResponseEntity<List<AccessSolicitationCreateResponse>> create(
             @Valid @RequestBody AccessSolicitationRequest request) {
         List<AccessSolicitation> solicitations = service.create(request);
-        List<AccessSolicitationResponse> responses = solicitations.stream()
-                .map(AccessSolicitationResponse::new)
+
+        List<AccessSolicitationCreateResponse> responses = solicitations.stream()
+                .map(AccessSolicitationCreateResponse::new) // construtor no DTO
                 .toList();
+
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     @Operation(summary = "Listar solicitações com filtros", security = { @SecurityRequirement(name = "bearerAuth") })
     @GetMapping
-    public ResponseEntity<Page<AccessSolicitationResponse>> findAll(
+    public ResponseEntity<Page<AccessSolicitationListResponse>> findAll(
             @RequestParam(required = false) SolicitationStatus status,
             @RequestParam(required = false) Long moduleId,
             @RequestParam(required = false) Boolean urgente,
@@ -65,30 +69,31 @@ public class AccessSolicitationController {
         Page<AccessSolicitation> solicitations = service.findWithFilters(
                 status, moduleId, urgente, texto, startDate, endDate, pageable);
 
-        Page<AccessSolicitationResponse> responses = solicitations.map(AccessSolicitationResponse::new);
+        Page<AccessSolicitationListResponse> responses = solicitations.map(AccessSolicitationListResponse::new);
+
         return ResponseEntity.ok(responses);
     }
 
     @Operation(summary = "Buscar solicitação por protocolo", security = { @SecurityRequirement(name = "bearerAuth") })
     @GetMapping("/{protocolo}")
-    public ResponseEntity<AccessSolicitationResponse> findByProtocolo(@PathVariable String protocolo) {
+    public ResponseEntity<AccessSolicitationDetailResponse> findByProtocolo(@PathVariable String protocolo) {
         AccessSolicitation solicitation = service.findByProtocolo(protocolo);
-        return ResponseEntity.ok(new AccessSolicitationResponse(solicitation));
+        return ResponseEntity.ok(new AccessSolicitationDetailResponse(solicitation));
     }
 
     @Operation(summary = "Cancelar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
     @PatchMapping("/{protocolo}/cancel")
-    public ResponseEntity<AccessSolicitationResponse> cancel(
+    public ResponseEntity<AccessSolicitationDetailResponse> cancel(
             @PathVariable String protocolo,
             @Valid @RequestBody CancelRequest cancelRequest) {
         AccessSolicitation solicitation = service.cancel(protocolo, cancelRequest.getReason());
-        return ResponseEntity.ok(new AccessSolicitationResponse(solicitation));
+        return ResponseEntity.ok(new AccessSolicitationDetailResponse(solicitation));
     }
 
     @Operation(summary = "Renovar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
     @PatchMapping("/{protocolo}/renew")
-    public ResponseEntity<AccessSolicitationResponse> renew(@PathVariable String protocolo) {
+    public ResponseEntity<AccessSolicitationDetailResponse> renew(@PathVariable String protocolo) {
         AccessSolicitation solicitation = service.renew(protocolo);
-        return ResponseEntity.ok(new AccessSolicitationResponse(solicitation));
+        return ResponseEntity.ok(new AccessSolicitationDetailResponse(solicitation));
     }
 }

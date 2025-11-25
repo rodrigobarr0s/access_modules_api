@@ -3,10 +3,24 @@ package io.github.rodrigobarr0s.access_modules_api.entity;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.HistoryAction;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "access_solicitation")
@@ -56,6 +70,10 @@ public class AccessSolicitation implements Serializable {
     @Column(length = 500)
     private String negationReason;
 
+    // Histórico de alterações
+    @OneToMany(mappedBy = "solicitation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SolicitationHistory> history = new ArrayList<>();
+
     // Construtores
     public AccessSolicitation() {
     }
@@ -88,6 +106,12 @@ public class AccessSolicitation implements Serializable {
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // Métodos utilitários para histórico
+    public void addHistory(HistoryAction action, String reason) {
+        SolicitationHistory entry = new SolicitationHistory(this, action, reason);
+        this.history.add(entry);
     }
 
     // Getters e Setters
@@ -153,16 +177,8 @@ public class AccessSolicitation implements Serializable {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public LocalDateTime getExpiresAt() {
@@ -187,6 +203,14 @@ public class AccessSolicitation implements Serializable {
 
     public void setNegationReason(String negationReason) {
         this.negationReason = negationReason;
+    }
+
+    public List<SolicitationHistory> getHistory() {
+        return history;
+    }
+
+    public void setHistory(List<SolicitationHistory> history) {
+        this.history = history;
     }
 
     // equals e hashCode baseados em id
