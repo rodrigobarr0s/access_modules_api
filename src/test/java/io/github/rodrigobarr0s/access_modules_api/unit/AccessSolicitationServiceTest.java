@@ -70,7 +70,6 @@ class AccessSolicitationServiceTest {
         when(moduleRepository.findById(module.getId())).thenReturn(Optional.of(module));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
 
-        // retorna o próprio objeto salvo sem usar any()
         Answer<Object> returnsFirstArg = inv -> inv.getArgument(0);
         lenient().when(repository.save(argThat(obj -> obj instanceof AccessSolicitation))).thenAnswer(returnsFirstArg);
     }

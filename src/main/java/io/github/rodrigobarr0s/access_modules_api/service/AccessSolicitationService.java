@@ -1,10 +1,15 @@
 package io.github.rodrigobarr0s.access_modules_api.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -165,28 +170,66 @@ public class AccessSolicitationService {
     }
 
     @Transactional(readOnly = true)
-    public List<AccessSolicitation> findWithFilters(SolicitationStatus status, Long userId, Long moduleId,
-            Boolean urgente) {
+    public Page<AccessSolicitation> findWithFilters(
+            SolicitationStatus status,
+            Long moduleId,
+            Boolean urgente,
+            String texto,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable) {
+
         Specification<AccessSolicitation> spec = (root, query, cb) -> {
             Predicate predicate = cb.conjunction();
 
+            // Apenas solicitações do usuário autenticado
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String email = auth.getName();
+            predicate = cb.and(predicate, cb.equal(root.get("user").get("email"), email));
+
+            // Filtro por status
             if (status != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("status"), status.getCode()));
+                predicate = cb.and(predicate, cb.equal(root.get("status"), status));
             }
-            if (userId != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("user").get("id"), userId));
-            }
+
+            // Filtro por módulo
             if (moduleId != null) {
                 predicate = cb.and(predicate, cb.equal(root.get("module").get("id"), moduleId));
             }
+
+            // Filtro por urgente
             if (urgente != null) {
                 predicate = cb.and(predicate, cb.equal(root.get("urgente"), urgente));
+            }
+
+            // Filtro por texto (protocolo, nome do módulo ou justificativa)
+            if (texto != null && !texto.isBlank()) {
+                String like = "%" + texto.toLowerCase() + "%";
+                predicate = cb.and(predicate,
+                        cb.or(
+                                cb.like(cb.lower(root.get("protocolo")), like),
+                                cb.like(cb.lower(root.get("module").get("name")), like),
+                                cb.like(cb.lower(root.get("justificativa")), like)));
+            }
+
+            // Filtro por período (createdAt)
+            if (startDate != null && endDate != null) {
+                predicate = cb.and(predicate,
+                        cb.between(root.get("createdAt"),
+                                startDate.atStartOfDay(),
+                                endDate.atTime(23, 59, 59)));
             }
 
             return predicate;
         };
 
-        return repository.findAll(spec);
+        // Paginação e ordenação padrão: 10 registros, mais recentes primeiro
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize() == 0 ? 10 : pageable.getPageSize(),
+                Sort.by("createdAt").descending());
+
+        return repository.findAll(spec, sortedPageable);
     }
 
     @Transactional(readOnly = true)

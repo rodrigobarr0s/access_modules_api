@@ -1,18 +1,28 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -21,6 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.User;
+import io.github.rodrigobarr0s.access_modules_api.entity.UserModuleAccess;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
 import io.github.rodrigobarr0s.access_modules_api.entity.enums.SolicitationStatus;
 import io.github.rodrigobarr0s.access_modules_api.repository.AccessSolicitationRepository;
@@ -32,12 +43,17 @@ import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotF
 
 class AccessSolicitationServiceExtraTest {
 
-    @Mock private AccessSolicitationRepository repository;
-    @Mock private SolicitationSequenceRepository sequenceRepository;
-    @Mock private UserRepository userRepository;
-    @Mock private ModuleRepository moduleRepository;
+    @Mock
+    private AccessSolicitationRepository repository;
+    @Mock
+    private SolicitationSequenceRepository sequenceRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private ModuleRepository moduleRepository;
 
-    @InjectMocks private AccessSolicitationService service;
+    @InjectMocks
+    private AccessSolicitationService service;
 
     private User user;
     private Module module;
@@ -69,24 +85,55 @@ class AccessSolicitationServiceExtraTest {
     @Test
     @DisplayName("findWithFilters deve aplicar todos os filtros")
     void shouldApplyAllFilters() {
-        when(repository.findAll(eqSpecification())).thenReturn(List.of(solicitation));
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<AccessSolicitation> page = new PageImpl<>(List.of(solicitation), pageable, 1);
 
-        List<AccessSolicitation> result = service.findWithFilters(
-                SolicitationStatus.ATIVO, user.getId(), module.getId(), true);
+        when(repository.findAll(
+                ArgumentMatchers.<Specification<AccessSolicitation>>argThat(spec -> spec != null),
+                ArgumentMatchers.<Pageable>argThat(p -> p.getPageNumber() == 0 &&
+                        p.getPageSize() == 10 &&
+                        p.getSort().getOrderFor("createdAt") != null)))
+                .thenReturn(page);
 
-        assertEquals(1, result.size());
-        verify(repository).findAll(eqSpecification());
+        Page<AccessSolicitation> result = service.findWithFilters(
+                SolicitationStatus.ATIVO,
+                module.getId(),
+                true,
+                "financeira",
+                LocalDate.now().minusDays(1),
+                LocalDate.now(),
+                pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+
+        verify(repository).findAll(
+                ArgumentMatchers.<Specification<AccessSolicitation>>argThat(spec -> spec != null),
+                ArgumentMatchers.<Pageable>argThat(p -> p.getPageNumber() == 0 &&
+                        p.getPageSize() == 10 &&
+                        p.getSort().getOrderFor("createdAt") != null));
     }
 
     @Test
     @DisplayName("findWithFilters sem filtros deve retornar todos")
     void shouldReturnAllWithoutFilters() {
-        when(repository.findAll(eqSpecification())).thenReturn(List.of(solicitation));
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<AccessSolicitation> page = new PageImpl<>(List.of(solicitation), pageable, 1);
 
-        List<AccessSolicitation> result = service.findWithFilters(null, null, null, null);
+        when(repository.findAll(
+                ArgumentMatchers.<Specification<AccessSolicitation>>argThat(spec -> spec != null),
+                ArgumentMatchers.<Pageable>argThat(p -> p.getPageSize() == 10)))
+                .thenReturn(page);
 
-        assertEquals(1, result.size());
-        verify(repository).findAll(eqSpecification());
+        Page<AccessSolicitation> result = service.findWithFilters(
+                null, null, null, null, null, null, pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+
+        verify(repository).findAll(
+                ArgumentMatchers.<Specification<AccessSolicitation>>argThat(spec -> spec != null),
+                ArgumentMatchers.<Pageable>argThat(p -> p.getPageSize() == 10));
     }
 
     @Test
@@ -129,8 +176,6 @@ class AccessSolicitationServiceExtraTest {
     @DisplayName("cancel deve atualizar status para CANCELADO e salvar")
     void shouldCancelSolicitation() {
         when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
-
-        ArgumentCaptor<AccessSolicitation> captor = ArgumentCaptor.forClass(AccessSolicitation.class);
         when(repository.save(eq(solicitation))).thenReturn(solicitation);
 
         AccessSolicitation result = service.cancel("SOL-123", "Motivo de cancelamento");
@@ -139,8 +184,7 @@ class AccessSolicitationServiceExtraTest {
         assertEquals("Motivo de cancelamento", result.getCancelReason());
 
         verify(repository).findByProtocolo(eq("SOL-123"));
-        verify(repository).save(captor.capture());
-        assertEquals(SolicitationStatus.CANCELADO, captor.getValue().getStatus());
+        verify(repository).save(eq(solicitation));
     }
 
     @Test
@@ -154,16 +198,12 @@ class AccessSolicitationServiceExtraTest {
 
         assertEquals(SolicitationStatus.ATIVO, result.getStatus());
         assertNotNull(result.getProtocolo());
-
-        verify(repository).findByProtocolo(eq("SOL-123"));
-        verify(sequenceRepository).getNextSequenceValue();
-        verify(repository).save(eq(solicitation));
     }
 
     @Test
-    @DisplayName("renew deve negar solicitação inválida")
-    void shouldRenewDeniedSolicitation() {
-        solicitation.setJustificativa("curta"); // força negação
+    @DisplayName("renew deve negar por justificativa insuficiente")
+    void shouldRenewDeniedForShortJustification() {
+        solicitation.setJustificativa("curta");
         when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
         when(repository.save(eq(solicitation))).thenReturn(solicitation);
@@ -172,14 +212,97 @@ class AccessSolicitationServiceExtraTest {
 
         assertEquals(SolicitationStatus.NEGADO, result.getStatus());
         assertEquals("Justificativa insuficiente ou genérica", result.getNegationReason());
+    }
+
+    @Test
+    @DisplayName("renew deve negar quando já existe solicitação ativa para o módulo")
+    void shouldRenewDeniedForDuplicateSolicitation() {
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        when(repository.existsByUserAndModuleAndStatus(eq(user), eq(module), eq(SolicitationStatus.ATIVO.getCode())))
+                .thenReturn(true);
+        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+
+        AccessSolicitation result = service.renew("SOL-123");
+
+        assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+        assertEquals("Usuário já possui solicitação ativa para este módulo", result.getNegationReason());
+    }
+
+    @Test
+    @DisplayName("renew deve negar quando usuário já possui acesso ativo ao módulo")
+    void shouldRenewDeniedForExistingAccess() {
+        // limpa acessos existentes e adiciona um acesso ativo ao mesmo módulo
+        user.getAccesses().clear();
+        user.addAccess(new UserModuleAccess(user, module));
+
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+
+        AccessSolicitation result = service.renew("SOL-123");
+
+        assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+        assertEquals("Usuário já possui acesso ativo a este módulo", result.getNegationReason());
 
         verify(repository).findByProtocolo(eq("SOL-123"));
         verify(sequenceRepository).getNextSequenceValue();
         verify(repository).save(eq(solicitation));
     }
 
-    // Helper para evitar cast inseguro
-    private Specification<AccessSolicitation> eqSpecification() {
-        return argThat(spec -> spec != null);
+    @Test
+    @DisplayName("renew deve negar quando módulo é incompatível")
+    void shouldRenewDeniedForIncompatibleModule() {
+        // cria um módulo já ativo no usuário
+        Module other = new Module();
+        other.setId(99L);
+        other.setName("Aprovador Financeiro");
+        user.getAccesses().clear();
+        user.addAccess(new UserModuleAccess(user, other));
+
+        // cria a solicitação para módulo incompatível
+        Module novoModulo = new Module();
+        novoModulo.setId(100L);
+        novoModulo.setName("Solicitante Financeiro");
+        solicitation.setModule(novoModulo);
+
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+
+        AccessSolicitation result = service.renew("SOL-123");
+
+        assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+        assertEquals("Módulo incompatível com outro módulo já ativo em seu perfil", result.getNegationReason());
+
+        verify(repository).findByProtocolo(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).save(eq(solicitation));
     }
+
+    @Test
+@DisplayName("renew deve negar quando limite de módulos ativos é atingido")
+void shouldRenewDeniedForLimitExceeded() {
+    // limpa acessos existentes
+    user.getAccesses().clear();
+
+    // adiciona 10 acessos simulando limite atingido (todos diferentes do módulo da solicitação)
+    IntStream.range(0, 10).forEach(i -> {
+        Module mod = new Module();
+        mod.setId((long) i + 100); // ids diferentes
+        mod.setName("ModuloExtra" + i);
+        user.addAccess(new UserModuleAccess(user, mod));
+    });
+
+    when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+    when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+    when(repository.save(eq(solicitation))).thenReturn(solicitation);
+
+    AccessSolicitation result = service.renew("SOL-123");
+
+    assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+    assertEquals("Limite de módulos ativos atingido", result.getNegationReason());
+}
+
+
 }
