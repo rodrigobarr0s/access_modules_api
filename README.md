@@ -145,34 +145,51 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "moduleId": 1,
-  "justificativa": "Necessário para trabalho",
+  "moduleIds": [1, 2],
+  "justificativa": "Necessário para realizar atividades do meu departamento",
   "urgente": true
 }
 ```
 
-**Resposta de Sucesso**
+**✅ Resposta de Sucesso**
+
 ```json
-{
-  "protocolo": "SOL-20251125-0001",
-  "status": "ATIVO",
-  "justificativa": "Necessário para trabalho",
-  "urgente": true,
-  "userId": 10,
-  "userEmail": "financeiro@empresa.com",
-  "moduleId": 1,
-  "moduleName": "Gestão Financeira"
-}
+[
+  {
+    "protocolo": "SOL-20251125-0001",
+    "status": "ATIVO",
+    "justificativa": "Necessário para realizar atividades do meu departamento",
+    "urgente": true,
+    "userId": 10,
+    "userEmail": "financeiro@empresa.com",
+    "moduleId": 1,
+    "moduleName": "Gestão Financeira"
+  },
+  {
+    "protocolo": "SOL-20251125-0002",
+    "status": "NEGADO",
+    "justificativa": "Necessário para realizar atividades do meu departamento",
+    "urgente": true,
+    "userId": 10,
+    "userEmail": "financeiro@empresa.com",
+    "moduleId": 2,
+    "moduleName": "Aprovador Financeiro",
+    "motivo": "Módulo incompatível com outro módulo já ativo em seu perfil"
+  }
+]
 ```
 
-**Resposta de Erro**
+**❌ Resposta de Erro**
 ```json
-{
-  "mensagem": "Solicitação negada",
-  "motivo": "Departamento sem permissão para acessar este módulo"
-}
+[
+  {
+    "mensagem": "Solicitação negada",
+    "motivo": "Departamento sem permissão para acessar este módulo",
+    "moduleId": 3,
+    "moduleName": "Gestão de Estoque"
+  }
+]
 ```
-
 ---
 
 ### 📋 Listar Solicitações com Filtros

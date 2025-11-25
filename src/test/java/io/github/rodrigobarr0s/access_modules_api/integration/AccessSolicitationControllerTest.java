@@ -31,8 +31,9 @@ import io.github.rodrigobarr0s.access_modules_api.security.SecurityConfig;
 import io.github.rodrigobarr0s.access_modules_api.security.JwtFilter;
 import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
 
-@WebMvcTest(controllers = AccessSolicitationController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-        SecurityConfig.class, JwtFilter.class }))
+@WebMvcTest(controllers = AccessSolicitationController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
+                classes = { SecurityConfig.class, JwtFilter.class }))
 @AutoConfigureMockMvc(addFilters = false)
 class AccessSolicitationControllerTest {
 
@@ -46,24 +47,24 @@ class AccessSolicitationControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("POST /solicitations deve criar solicitação e retornar 201")
-    void deveCriarSolicitacao() throws Exception {
+    @DisplayName("POST /solicitations deve criar solicitações e retornar 201")
+    void deveCriarSolicitacoes() throws Exception {
         AccessSolicitationRequest request = new AccessSolicitationRequest();
-        request.setModuleId(1L);
-        request.setJustificativa("Necessário acesso");
+        request.setModuleIds(List.of(1L));
+        request.setJustificativa("Necessário acesso válido com mais de vinte caracteres");
         request.setUrgente(true);
 
         AccessSolicitation solicitation = new AccessSolicitation();
         solicitation.setProtocolo("PROTO123");
-        solicitation.setStatus(SolicitationStatus.ATIVO); // ✅ status definido
+        solicitation.setStatus(SolicitationStatus.ATIVO);
 
-        Mockito.when(service.create(Mockito.any())).thenReturn(solicitation);
+        Mockito.when(service.create(Mockito.any())).thenReturn(List.of(solicitation));
 
         mockMvc.perform(post("/solicitations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.protocolo").value("PROTO123"));
+                .andExpect(jsonPath("$[0].protocolo").value("PROTO123"));
     }
 
     @Test
@@ -71,7 +72,7 @@ class AccessSolicitationControllerTest {
     void deveListarSolicitacoes() throws Exception {
         AccessSolicitation solicitation = new AccessSolicitation();
         solicitation.setProtocolo("PROTO456");
-        solicitation.setStatus(SolicitationStatus.ATIVO); // ✅ status definido
+        solicitation.setStatus(SolicitationStatus.ATIVO);
 
         Mockito.when(service.findWithFilters(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(List.of(solicitation));
@@ -87,7 +88,7 @@ class AccessSolicitationControllerTest {
     void deveBuscarPorProtocolo() throws Exception {
         AccessSolicitation solicitation = new AccessSolicitation();
         solicitation.setProtocolo("PROTO789");
-        solicitation.setStatus(SolicitationStatus.ATIVO); // ✅ status definido
+        solicitation.setStatus(SolicitationStatus.ATIVO);
 
         Mockito.when(service.findByProtocolo("PROTO789")).thenReturn(solicitation);
 
@@ -104,7 +105,7 @@ class AccessSolicitationControllerTest {
 
         AccessSolicitation solicitation = new AccessSolicitation();
         solicitation.setProtocolo("PROTO999");
-        solicitation.setStatus(SolicitationStatus.CANCELADO); // ✅ status definido
+        solicitation.setStatus(SolicitationStatus.CANCELADO);
 
         Mockito.when(service.cancel(Mockito.eq("PROTO999"), Mockito.anyString())).thenReturn(solicitation);
 
@@ -120,7 +121,7 @@ class AccessSolicitationControllerTest {
     void deveRenovarSolicitacao() throws Exception {
         AccessSolicitation solicitation = new AccessSolicitation();
         solicitation.setProtocolo("PROTO321");
-        solicitation.setStatus(SolicitationStatus.ATIVO); // ✅ status definido
+        solicitation.setStatus(SolicitationStatus.ATIVO);
 
         Mockito.when(service.renew("PROTO321")).thenReturn(solicitation);
 

@@ -2,6 +2,7 @@ package io.github.rodrigobarr0s.access_modules_api.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -32,6 +33,8 @@ public class AccessSolicitationService {
     private final UserRepository userRepository;
     private final ModuleRepository moduleRepository;
 
+    private static final List<String> GENERIC_JUSTIFICATIONS = List.of("teste", "aaa", "preciso");
+
     public AccessSolicitationService(AccessSolicitationRepository repository,
             SolicitationSequenceRepository sequenceRepository,
             UserRepository userRepository,
@@ -50,59 +53,81 @@ public class AccessSolicitationService {
     }
 
     @Transactional
-    public AccessSolicitation create(AccessSolicitationRequest request) {
+    public List<AccessSolicitation> create(AccessSolicitationRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário", email));
 
-        Module module = moduleRepository.findById(request.getModuleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Módulo", request.getModuleId().toString()));
+        // Lista para armazenar todas as solicitações criadas
+        List<AccessSolicitation> solicitations = new ArrayList<>();
 
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setUser(user);
-        solicitation.setModule(module);
-        solicitation.setJustificativa(request.getJustificativa());
-        solicitation.setUrgente(request.isUrgente());
-        solicitation.setCreatedAt(LocalDateTime.now());
-        solicitation.setUpdatedAt(LocalDateTime.now());
-        solicitation.setExpiresAt(LocalDateTime.now().plusDays(180));
-        solicitation.setProtocolo(generateProtocolo());
+        for (Long moduleId : request.getModuleIds()) {
+            Module module = moduleRepository.findById(moduleId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Módulo", moduleId.toString()));
 
-        // Validações de negócio
-        String motivoNegacao = validarSolicitacao(user, module, request.getJustificativa());
-        if (motivoNegacao == null) {
-            solicitation.setStatus(SolicitationStatus.ATIVO);
-        } else {
-            solicitation.setStatus(SolicitationStatus.NEGADO);
-            solicitation.setNegationReason(motivoNegacao);
+            AccessSolicitation solicitation = new AccessSolicitation();
+            solicitation.setUser(user);
+            solicitation.setModule(module);
+            solicitation.setJustificativa(request.getJustificativa());
+            solicitation.setUrgente(request.isUrgente());
+            solicitation.setCreatedAt(LocalDateTime.now());
+            solicitation.setUpdatedAt(LocalDateTime.now());
+            solicitation.setExpiresAt(LocalDateTime.now().plusDays(180));
+            solicitation.setProtocolo(generateProtocolo());
+
+            // Validações de negócio
+            String motivoNegacao = validarSolicitacao(user, module, request.getJustificativa());
+            if (motivoNegacao == null) {
+                solicitation.setStatus(SolicitationStatus.ATIVO);
+            } else {
+                solicitation.setStatus(SolicitationStatus.NEGADO);
+                solicitation.setNegationReason(motivoNegacao);
+            }
+
+            solicitations.add(repository.save(solicitation));
         }
 
-        return repository.save(solicitation);
+        return solicitations;
     }
 
     private String validarSolicitacao(User user, Module module, String justificativa) {
-        if (justificativa == null || justificativa.length() < 20 || justificativa.length() > 500) {
+        // Validação de justificativa
+        if (justificativa == null || justificativa.trim().isEmpty()) {
             return "Justificativa insuficiente ou genérica";
         }
 
+        String normalized = justificativa.trim().toLowerCase();
+        if (normalized.length() < 20 || normalized.length() > 500) {
+            return "Justificativa insuficiente ou genérica";
+        }
+
+        if (GENERIC_JUSTIFICATIONS.contains(normalized)) {
+            return "Justificativa insuficiente ou genérica";
+        }
+
+        // Verifica se já existe solicitação ativa para o mesmo módulo
         if (repository.existsByUserAndModuleAndStatus(user, module, SolicitationStatus.ATIVO.getCode())) {
             return "Usuário já possui solicitação ativa para este módulo";
         }
 
+        // Verifica se usuário já possui acesso ativo ao módulo
         if (user.getAccesses().stream().anyMatch(a -> a.getModule().equals(module))) {
             return "Usuário já possui acesso ativo a este módulo";
         }
 
+        // Verifica compatibilidade de departamento
         if (!departamentoPodeAcessar(user.getRole(), module)) {
             return "Departamento sem permissão para acessar este módulo";
         }
 
+        // Verifica incompatibilidade de módulos
         if (moduloIncompativel(user, module)) {
             return "Módulo incompatível com outro módulo já ativo em seu perfil";
         }
 
+        // Verifica limite de módulos ativos
         int limite = user.getRole() == Role.TI ? 10 : 5;
         if (user.getAccesses().size() >= limite) {
             return "Limite de módulos ativos atingido";

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +28,8 @@ class AccessSolicitationRequestTest {
 
     @Test
     void devePassarValidacaoQuandoDadosSaoValidos() {
-        AccessSolicitationRequest dto =
-                new AccessSolicitationRequest(1L, "Preciso de acesso urgente", true);
+        AccessSolicitationRequest dto = new AccessSolicitationRequest(List.of(1L),
+                "Justificativa detalhada válida para acesso ao módulo", true);
 
         Set<ConstraintViolation<AccessSolicitationRequest>> violations = validator.validate(dto);
 
@@ -36,24 +37,48 @@ class AccessSolicitationRequestTest {
     }
 
     @Test
-    void deveFalharQuandoModuleIdNulo() {
-        AccessSolicitationRequest dto =
-                new AccessSolicitationRequest(null, "Justificativa válida", false);
+    void deveFalharQuandoListaDeModulosNula() {
+        AccessSolicitationRequest dto = new AccessSolicitationRequest(null,
+                "Justificativa válida com mais de vinte caracteres", false);
 
         Set<ConstraintViolation<AccessSolicitationRequest>> violations = validator.validate(dto);
 
         assertFalse(violations.isEmpty());
-        assertEquals("O módulo é obrigatório", violations.iterator().next().getMessage());
+        assertEquals("Os módulos são obrigatórios", violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void deveFalharQuandoListaDeModulosVazia() {
+        AccessSolicitationRequest dto = new AccessSolicitationRequest(List.of(),
+                "Justificativa válida com mais de vinte caracteres", false);
+
+        Set<ConstraintViolation<AccessSolicitationRequest>> violations = validator.validate(dto);
+
+        assertFalse(violations.isEmpty());
+        assertEquals("É necessário selecionar entre 1 e 3 módulos", violations.iterator().next().getMessage());
     }
 
     @Test
     void deveFalharQuandoJustificativaVazia() {
-        AccessSolicitationRequest dto =
-                new AccessSolicitationRequest(1L, "", true);
+        AccessSolicitationRequest dto = new AccessSolicitationRequest(List.of(1L), "", true);
 
         Set<ConstraintViolation<AccessSolicitationRequest>> violations = validator.validate(dto);
 
         assertFalse(violations.isEmpty());
-        assertEquals("A justificativa não pode estar vazia", violations.iterator().next().getMessage());
+        String msg = violations.iterator().next().getMessage();
+        assertTrue(
+                msg.equals("A justificativa não pode estar vazia") ||
+                        msg.equals("A justificativa deve ter entre 20 e 500 caracteres"),
+                "Mensagem inesperada: " + msg);
+    }
+
+    @Test
+    void deveFalharQuandoJustificativaCurta() {
+        AccessSolicitationRequest dto = new AccessSolicitationRequest(List.of(1L), "curta", true);
+
+        Set<ConstraintViolation<AccessSolicitationRequest>> violations = validator.validate(dto);
+
+        assertFalse(violations.isEmpty());
+        assertEquals("A justificativa deve ter entre 20 e 500 caracteres", violations.iterator().next().getMessage());
     }
 }

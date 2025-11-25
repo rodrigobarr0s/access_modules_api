@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -76,12 +77,14 @@ class AccessSolicitationServiceTest {
     @DisplayName("Deve criar solicitação aprovada quando justificativa válida")
     void shouldCreateApprovedSolicitation() {
         AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleId(module.getId());
+        req.setModuleIds(List.of(module.getId()));
         req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
         req.setUrgente(false);
 
-        AccessSolicitation solicitation = service.create(req);
+        List<AccessSolicitation> solicitations = service.create(req);
 
+        assertEquals(1, solicitations.size());
+        AccessSolicitation solicitation = solicitations.get(0);
         assertEquals(SolicitationStatus.ATIVO, solicitation.getStatus());
         assertNull(solicitation.getNegationReason());
     }
@@ -90,12 +93,14 @@ class AccessSolicitationServiceTest {
     @DisplayName("Deve negar solicitação com justificativa curta")
     void shouldRejectShortJustification() {
         AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleId(module.getId());
+        req.setModuleIds(List.of(module.getId()));
         req.setJustificativa("curta"); // < 20 chars
         req.setUrgente(false);
 
-        AccessSolicitation solicitation = service.create(req);
+        List<AccessSolicitation> solicitations = service.create(req);
 
+        assertEquals(1, solicitations.size());
+        AccessSolicitation solicitation = solicitations.get(0);
         assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
         assertEquals("Justificativa insuficiente ou genérica", solicitation.getNegationReason());
     }
@@ -105,15 +110,17 @@ class AccessSolicitationServiceTest {
     void shouldRejectUserAlreadyHasAccess() {
         UserModuleAccess access = new UserModuleAccess();
         access.setModule(module);
-        user.addAccess(access); // ✅ usa helper da entidade
+        user.addAccess(access);
 
         AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleId(module.getId());
+        req.setModuleIds(List.of(module.getId()));
         req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
         req.setUrgente(false);
 
-        AccessSolicitation solicitation = service.create(req);
+        List<AccessSolicitation> solicitations = service.create(req);
 
+        assertEquals(1, solicitations.size());
+        AccessSolicitation solicitation = solicitations.get(0);
         assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
         assertEquals("Usuário já possui acesso ativo a este módulo", solicitation.getNegationReason());
     }
@@ -125,14 +132,15 @@ class AccessSolicitationServiceTest {
         user.setRole(Role.RH);
 
         AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleId(module.getId()); // módulo "Gestão Financeira"
+        req.setModuleIds(List.of(module.getId())); // módulo "Gestão Financeira"
         req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
         req.setUrgente(false);
 
-        AccessSolicitation solicitation = service.create(req);
+        List<AccessSolicitation> solicitations = service.create(req);
 
+        assertEquals(1, solicitations.size());
+        AccessSolicitation solicitation = solicitations.get(0);
         assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
         assertEquals("Departamento sem permissão para acessar este módulo", solicitation.getNegationReason());
     }
-
 }

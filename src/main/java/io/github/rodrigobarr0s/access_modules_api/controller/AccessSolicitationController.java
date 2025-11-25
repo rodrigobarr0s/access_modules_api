@@ -28,9 +28,12 @@ public class AccessSolicitationController {
 
     @Operation(summary = "Criar solicitação", security = { @SecurityRequirement(name = "bearerAuth") })
     @PostMapping
-    public ResponseEntity<AccessSolicitationResponse> create(@Valid @RequestBody AccessSolicitationRequest request) {
-        AccessSolicitation solicitation = service.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AccessSolicitationResponse(solicitation));
+    public ResponseEntity<List<AccessSolicitationResponse>> create(@Valid @RequestBody AccessSolicitationRequest request) {
+        List<AccessSolicitation> solicitations = service.create(request);
+        List<AccessSolicitationResponse> responses = solicitations.stream()
+                .map(AccessSolicitationResponse::new)
+                .toList();
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     @Operation(summary = "Listar solicitações com filtros", security = { @SecurityRequirement(name = "bearerAuth") })
