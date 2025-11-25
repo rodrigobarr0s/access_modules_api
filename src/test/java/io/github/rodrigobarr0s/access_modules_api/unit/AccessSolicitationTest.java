@@ -159,7 +159,7 @@ class AccessSolicitationTest {
     @DisplayName("equals deve retornar false para classe diferente")
     void equalsShouldReturnFalseForDifferentClass() {
         AccessSolicitation solicitation = new AccessSolicitation();
-        assertFalse(solicitation.equals("string"));
+        assertFalse(solicitation.equals(new Object()));
     }
 
     @Test

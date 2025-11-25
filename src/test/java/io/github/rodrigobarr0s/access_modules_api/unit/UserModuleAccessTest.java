@@ -98,7 +98,7 @@ class UserModuleAccessTest {
     @DisplayName("Equals deve retornar false quando comparar com classe diferente")
     void equalsShouldReturnFalseForDifferentClass() {
         UserModuleAccess access = new UserModuleAccess();
-        assertFalse(access.equals("string"));
+        assertFalse(access.equals(new Object()));
     }
 
     @Test

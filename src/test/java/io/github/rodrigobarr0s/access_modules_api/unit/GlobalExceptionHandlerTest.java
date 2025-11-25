@@ -5,6 +5,7 @@ import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotF
 import io.github.rodrigobarr0s.access_modules_api.service.exception.DuplicateEntityException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -20,7 +21,7 @@ class GlobalExceptionHandlerTest {
         ResourceNotFoundException ex = new ResourceNotFoundException("Usuário", "id=1");
         ResponseEntity<String> response = handler.handleNotFound(ex);
 
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode()); 
         assertTrue(response.getBody().contains("Usuário"));
     }
 
@@ -30,7 +31,7 @@ class GlobalExceptionHandlerTest {
         DuplicateEntityException ex = new DuplicateEntityException("Usuário", "email=teste@empresa.com");
         ResponseEntity<String> response = handler.handleDuplicate(ex);
 
-        assertEquals(409, response.getStatusCodeValue());
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode()); 
         assertTrue(response.getBody().contains("Usuário"));
     }
 
@@ -40,7 +41,7 @@ class GlobalExceptionHandlerTest {
         AccessDeniedException ex = new AccessDeniedException("Acesso negado");
         ResponseEntity<String> response = handler.handleAccessDenied(ex);
 
-        assertEquals(403, response.getStatusCodeValue());
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode()); 
         assertEquals("Acesso negado", response.getBody());
     }
 }

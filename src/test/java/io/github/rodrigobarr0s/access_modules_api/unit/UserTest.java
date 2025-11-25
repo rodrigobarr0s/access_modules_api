@@ -107,7 +107,7 @@ class UserTest {
     @DisplayName("Equals deve retornar false quando comparar com classe diferente")
     void equalsShouldReturnFalseForDifferentClass() {
         User user = new User();
-        assertFalse(user.equals("string"));
+        assertFalse(user.equals(new Object())); 
     }
 
     @Test

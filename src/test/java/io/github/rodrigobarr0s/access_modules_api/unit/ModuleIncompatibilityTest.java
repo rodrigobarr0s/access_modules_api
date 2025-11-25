@@ -123,7 +123,7 @@ class ModuleIncompatibilityTest {
     @DisplayName("Equals deve retornar false quando comparar com classe diferente")
     void equalsShouldReturnFalseWhenDifferentClass() {
         ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        assertFalse(incompatibility.equals("string"));
+        assertFalse(incompatibility.equals(new Object()));
     }
 
     @Test

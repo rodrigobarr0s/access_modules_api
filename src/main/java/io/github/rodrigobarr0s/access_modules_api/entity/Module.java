@@ -106,20 +106,26 @@ public class Module implements Serializable {
         incompatibility.setModule(null);
     }
 
-    // equals e hashCode baseados em id
     @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;
         if (!(o instanceof Module))
             return false;
-        Module module = (Module) o;
-        return Objects.equals(id, module.id);
+        Module other = (Module) o;
+
+        // Se ambos têm id definido, compara por id
+        if (this.id != null && other.id != null) {
+            return Objects.equals(this.id, other.id);
+        }
+
+        // Se id é null, compara pelo nome
+        return Objects.equals(this.name, other.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return id != null ? Objects.hash(id) : Objects.hash(name);
     }
 
     @Override

@@ -108,7 +108,7 @@ class ModuleTest {
     @DisplayName("equals deve retornar false para classe diferente")
     void equalsShouldReturnFalseForDifferentClass() {
         Module module = new Module(1L, "Financeiro", "Gestão Financeira");
-        assertFalse(module.equals("string"));
+        assertFalse(module.equals(new Object()));
     }
 
     @Test
