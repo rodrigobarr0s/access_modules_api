@@ -1,12 +1,18 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
-import io.github.rodrigobarr0s.access_modules_api.entity.User;
-import io.github.rodrigobarr0s.access_modules_api.entity.UserModuleAccess;
-import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import io.github.rodrigobarr0s.access_modules_api.entity.User;
+import io.github.rodrigobarr0s.access_modules_api.entity.UserModuleAccess;
+import io.github.rodrigobarr0s.access_modules_api.entity.enums.Role;
+import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 
 class UserTest {
 
@@ -47,7 +53,9 @@ class UserTest {
     @DisplayName("Deve adicionar e remover UserModuleAccess corretamente")
     void deveAdicionarERemoverAccess() {
         User user = new User("user@test.com", "abcdef", Role.FINANCEIRO);
-        UserModuleAccess access = new UserModuleAccess();
+
+        Module module = new Module("Financeiro", "desc"); // usa o construtor da sua entidade
+        UserModuleAccess access = new UserModuleAccess(user, module); // já associa user+module
 
         user.addAccess(access);
         assertTrue(user.getAccesses().contains(access));
@@ -107,7 +115,7 @@ class UserTest {
     @DisplayName("Equals deve retornar false quando comparar com classe diferente")
     void equalsShouldReturnFalseForDifferentClass() {
         User user = new User();
-        assertFalse(user.equals(new Object())); 
+        assertFalse(user.equals(new Object()));
     }
 
     @Test

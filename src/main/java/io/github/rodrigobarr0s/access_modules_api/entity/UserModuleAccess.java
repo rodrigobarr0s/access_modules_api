@@ -80,12 +80,18 @@ public class UserModuleAccess implements Serializable {
         if (!(o instanceof UserModuleAccess))
             return false;
         UserModuleAccess that = (UserModuleAccess) o;
-        return Objects.equals(id, that.id);
+        if (id != null && that.id != null) {
+            return Objects.equals(id, that.id);
+        }
+        return Objects.equals(user, that.user) && Objects.equals(module, that.module);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        if (id != null) {
+            return Objects.hash(id);
+        }
+        return Objects.hash(user, module);
     }
 
     @Override

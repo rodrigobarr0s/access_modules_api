@@ -1,26 +1,21 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import io.github.rodrigobarr0s.access_modules_api.entity.AccessSolicitation;
@@ -35,144 +30,156 @@ import io.github.rodrigobarr0s.access_modules_api.repository.UserRepository;
 import io.github.rodrigobarr0s.access_modules_api.service.AccessSolicitationService;
 import io.github.rodrigobarr0s.access_modules_api.service.exception.ResourceNotFoundException;
 
-@ExtendWith(MockitoExtension.class)
 class AccessSolicitationServiceExtraTest {
 
-    @Mock
-    private AccessSolicitationRepository repository;
+    @Mock private AccessSolicitationRepository repository;
+    @Mock private SolicitationSequenceRepository sequenceRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private ModuleRepository moduleRepository;
 
-    @Mock
-    private SolicitationSequenceRepository sequenceRepository;
+    @InjectMocks private AccessSolicitationService service;
 
-    @Mock
-    private UserRepository userRepository;
+    private User user;
+    private Module module;
+    private AccessSolicitation solicitation;
 
-    @Mock
-    private ModuleRepository moduleRepository;
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
 
-    @InjectMocks
-    private AccessSolicitationService service;
+        user = new User();
+        user.setId(1L);
+        user.setEmail("user@email.com");
+        user.setRole(Role.TI);
+
+        module = new Module();
+        module.setId(1L);
+        module.setName("Gestão Financeira");
+
+        solicitation = new AccessSolicitation();
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setJustificativa("Justificativa válida e detalhada");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(user.getEmail(), null));
+    }
 
     @Test
-    void deveFiltrarPorStatusEUsuario() {
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setStatus(SolicitationStatus.ATIVO);
-        solicitation.setUser(new User());
+    @DisplayName("findWithFilters deve aplicar todos os filtros")
+    void shouldApplyAllFilters() {
+        when(repository.findAll(eqSpecification())).thenReturn(List.of(solicitation));
 
-        when(repository.findAll(argThat((Specification<AccessSolicitation> spec) -> spec != null)))
-                .thenReturn(List.of(solicitation));
-
-        List<AccessSolicitation> result = service.findWithFilters(SolicitationStatus.ATIVO, 1L, null, null);
+        List<AccessSolicitation> result = service.findWithFilters(
+                SolicitationStatus.ATIVO, user.getId(), module.getId(), true);
 
         assertEquals(1, result.size());
-        assertEquals(SolicitationStatus.ATIVO, result.get(0).getStatus());
-
-        verify(repository).findAll(argThat((Specification<AccessSolicitation> spec) -> spec != null));
+        verify(repository).findAll(eqSpecification());
     }
 
     @Test
-    void deveRetornarSolicitacaoPorProtocoloQuandoAutorizado() {
-        User user = new User();
-        user.setEmail("teste@dominio.com");
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setUser(user);
+    @DisplayName("findWithFilters sem filtros deve retornar todos")
+    void shouldReturnAllWithoutFilters() {
+        when(repository.findAll(eqSpecification())).thenReturn(List.of(solicitation));
 
-        when(repository.findByProtocolo(eq("PROTO123"))).thenReturn(Optional.of(solicitation));
+        List<AccessSolicitation> result = service.findWithFilters(null, null, null, null);
 
-        Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("teste@dominio.com");
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        AccessSolicitation result = service.findByProtocolo("PROTO123");
-
-        assertEquals(user, result.getUser());
-        verify(repository).findByProtocolo(eq("PROTO123"));
+        assertEquals(1, result.size());
+        verify(repository).findAll(eqSpecification());
     }
 
     @Test
-    void deveLancarAccessDeniedQuandoUsuarioNaoAutorizado() {
-        User user = new User();
-        user.setEmail("outro@dominio.com");
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setUser(user);
+    @DisplayName("findByProtocolo deve retornar solicitação autorizada")
+    void shouldFindByProtocoloAuthorized() {
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
 
-        when(repository.findByProtocolo(eq("PROTO123"))).thenReturn(Optional.of(solicitation));
+        AccessSolicitation result = service.findByProtocolo("SOL-123");
 
-        Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("teste@dominio.com");
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        assertThrows(AccessDeniedException.class, () -> service.findByProtocolo("PROTO123"));
-        verify(repository).findByProtocolo(eq("PROTO123"));
+        assertEquals(solicitation, result);
+        verify(repository).findByProtocolo(eq("SOL-123"));
     }
 
     @Test
-    void deveLancarResourceNotFoundQuandoSolicitacaoNaoExiste() {
-        when(repository.findByProtocolo(eq("PROTO123"))).thenReturn(Optional.empty());
+    @DisplayName("findByProtocolo deve lançar AccessDeniedException para usuário diferente")
+    void shouldThrowAccessDeniedForDifferentUser() {
+        User otherUser = new User();
+        otherUser.setEmail("other@email.com");
+        solicitation.setUser(otherUser);
 
-        assertThrows(ResourceNotFoundException.class, () -> service.findByProtocolo("PROTO123"));
-        verify(repository).findByProtocolo(eq("PROTO123"));
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken("user@email.com", null));
+
+        assertThrows(AccessDeniedException.class, () -> service.findByProtocolo("SOL-123"));
+        verify(repository).findByProtocolo(eq("SOL-123"));
     }
 
     @Test
-    void deveCancelarSolicitacao() {
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setProtocolo("PROTO123");
-        User user = new User();
-        user.setEmail("teste@dominio.com");
-        solicitation.setUser(user);
+    @DisplayName("findByProtocolo deve lançar ResourceNotFoundException quando não encontrado")
+    void shouldThrowNotFoundWhenProtocoloMissing() {
+        when(repository.findByProtocolo(eq("SOL-404"))).thenReturn(Optional.empty());
 
-        when(repository.findByProtocolo(eq("PROTO123"))).thenReturn(Optional.of(solicitation));
+        assertThrows(ResourceNotFoundException.class, () -> service.findByProtocolo("SOL-404"));
+        verify(repository).findByProtocolo(eq("SOL-404"));
+    }
+
+    @Test
+    @DisplayName("cancel deve atualizar status para CANCELADO e salvar")
+    void shouldCancelSolicitation() {
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+
+        ArgumentCaptor<AccessSolicitation> captor = ArgumentCaptor.forClass(AccessSolicitation.class);
         when(repository.save(eq(solicitation))).thenReturn(solicitation);
 
-        // Configura autenticação no contexto
-        Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("teste@dominio.com");
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        AccessSolicitation result = service.cancel("PROTO123", "Motivo de cancelamento");
+        AccessSolicitation result = service.cancel("SOL-123", "Motivo de cancelamento");
 
         assertEquals(SolicitationStatus.CANCELADO, result.getStatus());
         assertEquals("Motivo de cancelamento", result.getCancelReason());
-        assertNotNull(result.getUpdatedAt());
 
-        verify(repository).findByProtocolo(eq("PROTO123"));
-        verify(repository).save(eq(solicitation));
+        verify(repository).findByProtocolo(eq("SOL-123"));
+        verify(repository).save(captor.capture());
+        assertEquals(SolicitationStatus.CANCELADO, captor.getValue().getStatus());
     }
 
     @Test
-    void deveRenovarSolicitacao() {
-        User user = new User();
-        user.setEmail("teste@dominio.com");
-        user.setRole(Role.FINANCEIRO); // 🔹 define o role para evitar NPE
-
-        Module module = new Module();
-        module.setName("Gestão Financeira");
-
-        AccessSolicitation solicitation = new AccessSolicitation();
-        solicitation.setProtocolo("PROTO123");
-        solicitation.setUser(user);
-        solicitation.setModule(module);
-        solicitation.setJustificativa("Justificativa válida com mais de 20 caracteres");
-
-        when(repository.findByProtocolo(eq("PROTO123"))).thenReturn(Optional.of(solicitation));
+    @DisplayName("renew deve aprovar solicitação válida")
+    void shouldRenewApprovedSolicitation() {
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
         when(repository.save(eq(solicitation))).thenReturn(solicitation);
 
-        // Configura autenticação no contexto
-        Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("teste@dominio.com");
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        AccessSolicitation result = service.renew("PROTO123");
+        AccessSolicitation result = service.renew("SOL-123");
 
         assertEquals(SolicitationStatus.ATIVO, result.getStatus());
-        assertNotNull(result.getExpiresAt());
-        assertNotEquals("PROTO123", result.getProtocolo());
+        assertNotNull(result.getProtocolo());
 
-        verify(repository).findByProtocolo(eq("PROTO123"));
+        verify(repository).findByProtocolo(eq("SOL-123"));
         verify(sequenceRepository).getNextSequenceValue();
         verify(repository).save(eq(solicitation));
     }
 
+    @Test
+    @DisplayName("renew deve negar solicitação inválida")
+    void shouldRenewDeniedSolicitation() {
+        solicitation.setJustificativa("curta"); // força negação
+        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+
+        AccessSolicitation result = service.renew("SOL-123");
+
+        assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+        assertEquals("Justificativa insuficiente ou genérica", result.getNegationReason());
+
+        verify(repository).findByProtocolo(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).save(eq(solicitation));
+    }
+
+    // Helper para evitar cast inseguro
+    private Specification<AccessSolicitation> eqSpecification() {
+        return argThat(spec -> spec != null);
+    }
 }

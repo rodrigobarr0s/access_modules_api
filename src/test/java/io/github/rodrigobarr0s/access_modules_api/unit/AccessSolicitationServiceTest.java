@@ -1,8 +1,10 @@
 package io.github.rodrigobarr0s.access_modules_api.unit;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -34,13 +37,10 @@ class AccessSolicitationServiceTest {
 
     @Mock
     private AccessSolicitationRepository repository;
-
     @Mock
     private SolicitationSequenceRepository sequenceRepository;
-
     @Mock
     private UserRepository userRepository;
-
     @Mock
     private ModuleRepository moduleRepository;
 
@@ -63,84 +63,127 @@ class AccessSolicitationServiceTest {
         module.setId(1L);
         module.setName("Gestão Financeira");
 
-        // Autenticação fake no contexto
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(user.getEmail(), null));
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(moduleRepository.findById(module.getId())).thenReturn(Optional.of(module));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // retorna o próprio objeto salvo sem usar any()
+        Answer<Object> returnsFirstArg = inv -> inv.getArgument(0);
+        lenient().when(repository.save(argThat(obj -> obj instanceof AccessSolicitation))).thenAnswer(returnsFirstArg);
     }
 
     @Test
-    @DisplayName("Deve criar solicitação aprovada quando justificativa válida")
-    void shouldCreateApprovedSolicitation() {
-        AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleIds(List.of(module.getId()));
-        req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
-        req.setUrgente(false);
+    @DisplayName("Deve aprovar solicitação com justificativa válida")
+    void shouldApproveValidSolicitation() {
+        AccessSolicitationRequest req = new AccessSolicitationRequest(
+                List.of(module.getId()), "Justificativa detalhada e válida para acesso ao módulo", false);
 
         List<AccessSolicitation> solicitations = service.create(req);
 
-        assertEquals(1, solicitations.size());
-        AccessSolicitation solicitation = solicitations.get(0);
-        assertEquals(SolicitationStatus.ATIVO, solicitation.getStatus());
-        assertNull(solicitation.getNegationReason());
+        assertAll(
+                () -> assertEquals(1, solicitations.size()),
+                () -> assertEquals(SolicitationStatus.ATIVO, solicitations.get(0).getStatus()),
+                () -> assertNull(solicitations.get(0).getNegationReason()));
     }
 
     @Test
-    @DisplayName("Deve negar solicitação com justificativa curta")
-    void shouldRejectShortJustification() {
-        AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleIds(List.of(module.getId()));
-        req.setJustificativa("curta"); // < 20 chars
-        req.setUrgente(false);
-
+    @DisplayName("Deve negar solicitação com justificativa nula")
+    void shouldRejectNullJustification() {
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), null, false);
         List<AccessSolicitation> solicitations = service.create(req);
-
-        assertEquals(1, solicitations.size());
-        AccessSolicitation solicitation = solicitations.get(0);
-        assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
-        assertEquals("Justificativa insuficiente ou genérica", solicitation.getNegationReason());
+        assertEquals("Justificativa insuficiente ou genérica", solicitations.get(0).getNegationReason());
     }
 
     @Test
-    @DisplayName("Deve negar solicitação quando usuário já possui acesso ao módulo")
+    @DisplayName("Deve negar solicitação com justificativa genérica")
+    void shouldRejectGenericJustification() {
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "teste", false);
+        List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Justificativa insuficiente ou genérica", solicitations.get(0).getNegationReason());
+    }
+
+    @Test
+    @DisplayName("Deve negar quando usuário já possui acesso ao módulo")
     void shouldRejectUserAlreadyHasAccess() {
-        UserModuleAccess access = new UserModuleAccess();
-        access.setModule(module);
-        user.addAccess(access);
-
-        AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleIds(List.of(module.getId()));
-        req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
-        req.setUrgente(false);
-
+        user.addAccess(new UserModuleAccess(user, module));
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "Justificativa válida",
+                false);
         List<AccessSolicitation> solicitations = service.create(req);
-
-        assertEquals(1, solicitations.size());
-        AccessSolicitation solicitation = solicitations.get(0);
-        assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
-        assertEquals("Usuário já possui acesso ativo a este módulo", solicitation.getNegationReason());
+        assertEquals("Usuário já possui acesso ativo a este módulo", solicitations.get(0).getNegationReason());
     }
 
     @Test
-    @DisplayName("Deve negar solicitação quando departamento não tem permissão para acessar módulo")
-    void shouldRejectDepartmentWithoutPermission() {
-        // Usuário de RH tentando acessar módulo Financeiro
-        user.setRole(Role.RH);
-
-        AccessSolicitationRequest req = new AccessSolicitationRequest();
-        req.setModuleIds(List.of(module.getId())); // módulo "Gestão Financeira"
-        req.setJustificativa("Justificativa detalhada e válida para acesso ao módulo");
-        req.setUrgente(false);
-
+    @DisplayName("Deve negar quando já existe solicitação ativa para o mesmo módulo")
+    void shouldRejectActiveSolicitationExists() {
+        when(repository.existsByUserAndModuleAndStatus(user, module, SolicitationStatus.ATIVO.getCode()))
+                .thenReturn(true);
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "Justificativa válida",
+                false);
         List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Usuário já possui solicitação ativa para este módulo", solicitations.get(0).getNegationReason());
+    }
 
-        assertEquals(1, solicitations.size());
-        AccessSolicitation solicitation = solicitations.get(0);
-        assertEquals(SolicitationStatus.NEGADO, solicitation.getStatus());
-        assertEquals("Departamento sem permissão para acessar este módulo", solicitation.getNegationReason());
+    @Test
+    @DisplayName("Deve negar quando departamento não tem permissão")
+    void shouldRejectDepartmentWithoutPermission() {
+        user.setRole(Role.RH);
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "Justificativa válida",
+                false);
+        List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Departamento sem permissão para acessar este módulo", solicitations.get(0).getNegationReason());
+    }
+
+    @Test
+    @DisplayName("Deve negar quando módulos são incompatíveis")
+    void shouldRejectIncompatibleModules() {
+        Module adminRH = new Module();
+        adminRH.setId(10L);
+        adminRH.setName("Administrador RH");
+        user.addAccess(new UserModuleAccess(user, adminRH));
+        Module colaboradorRH = new Module();
+        colaboradorRH.setId(20L);
+        colaboradorRH.setName("Colaborador RH");
+        when(moduleRepository.findById(colaboradorRH.getId())).thenReturn(Optional.of(colaboradorRH));
+
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(colaboradorRH.getId()),
+                "Justificativa válida", false);
+        List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Módulo incompatível com outro módulo já ativo em seu perfil",
+                solicitations.get(0).getNegationReason());
+    }
+
+    @Test
+    @DisplayName("Deve negar quando limite de módulos ativos é atingido para não-TI")
+    void shouldRejectLimitReachedNonTI() {
+        user.setRole(Role.FINANCEIRO);
+        for (int i = 0; i < 6; i++) {
+            Module m = new Module();
+            m.setId(100L + i);
+            m.setName("Modulo " + i);
+            user.addAccess(new UserModuleAccess(user, m));
+        }
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "Justificativa válida",
+                false);
+        List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Limite de módulos ativos atingido", solicitations.get(0).getNegationReason());
+    }
+
+    @Test
+    @DisplayName("Deve negar quando limite de módulos ativos é atingido para TI")
+    void shouldRejectLimitReachedTI() {
+        user.setRole(Role.TI);
+        for (int i = 0; i < 11; i++) {
+            Module m = new Module();
+            m.setId(200L + i);
+            m.setName("Modulo " + i);
+            user.addAccess(new UserModuleAccess(user, m));
+        }
+        AccessSolicitationRequest req = new AccessSolicitationRequest(List.of(module.getId()), "Justificativa válida",
+                false);
+        List<AccessSolicitation> solicitations = service.create(req);
+        assertEquals("Limite de módulos ativos atingido", solicitations.get(0).getNegationReason());
     }
 }

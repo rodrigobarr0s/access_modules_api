@@ -50,6 +50,7 @@ class ModuleTest {
     void deveAdicionarERemoverAccess() {
         Module module = new Module("Financeiro", "desc");
         UserModuleAccess access = new UserModuleAccess();
+        access.setModule(module); // garante que o módulo está setado
 
         module.addAccess(access);
         assertTrue(module.getAccesses().contains(access));

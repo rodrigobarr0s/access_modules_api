@@ -10,45 +10,50 @@ import static org.junit.jupiter.api.Assertions.*;
 class ModuleIncompatibilityTest {
 
     @Test
-    @DisplayName("Deve construir ModuleIncompatibility com construtor vazio")
+    @DisplayName("Construtor vazio deve inicializar atributos como null")
     void deveConstruirComConstrutorVazio() {
         ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        assertNull(incompatibility.getId());
-        assertNull(incompatibility.getModule());
-        assertNull(incompatibility.getIncompatibleModule());
+        assertAll(
+                () -> assertNull(incompatibility.getId()),
+                () -> assertNull(incompatibility.getModule()),
+                () -> assertNull(incompatibility.getIncompatibleModule())
+        );
     }
 
     @Test
-    @DisplayName("Deve construir ModuleIncompatibility com construtor completo")
+    @DisplayName("Construtor completo deve inicializar todos os atributos")
     void deveConstruirComConstrutorCompleto() {
         Module m1 = new Module(1L, "Financeiro", "desc");
         Module m2 = new Module(2L, "RH", "desc");
 
         ModuleIncompatibility incompatibility = new ModuleIncompatibility(10L, m1, m2);
 
-        assertEquals(10L, incompatibility.getId());
-        assertEquals(m1, incompatibility.getModule());
-        assertEquals(m2, incompatibility.getIncompatibleModule());
+        assertAll(
+                () -> assertEquals(10L, incompatibility.getId()),
+                () -> assertEquals(m1, incompatibility.getModule()),
+                () -> assertEquals(m2, incompatibility.getIncompatibleModule())
+        );
     }
 
     @Test
-    @DisplayName("Deve construir ModuleIncompatibility com construtor parcial")
+    @DisplayName("Construtor parcial deve inicializar módulos e id como null")
     void deveConstruirComConstrutorParcial() {
         Module m1 = new Module(1L, "Financeiro", "desc");
         Module m2 = new Module(2L, "RH", "desc");
 
         ModuleIncompatibility incompatibility = new ModuleIncompatibility(m1, m2);
 
-        assertNull(incompatibility.getId());
-        assertEquals(m1, incompatibility.getModule());
-        assertEquals(m2, incompatibility.getIncompatibleModule());
+        assertAll(
+                () -> assertNull(incompatibility.getId()),
+                () -> assertEquals(m1, incompatibility.getModule()),
+                () -> assertEquals(m2, incompatibility.getIncompatibleModule())
+        );
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando módulo for igual ao incompatível")
+    @DisplayName("Validate deve lançar exceção quando módulo for igual ao incompatível")
     void deveLancarExcecaoQuandoModuloIgual() {
         Module m1 = new Module(1L, "Financeiro", "desc");
-
         ModuleIncompatibility incompatibility = new ModuleIncompatibility(m1, m1);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, incompatibility::validate);
@@ -56,22 +61,52 @@ class ModuleIncompatibilityTest {
     }
 
     @Test
-    @DisplayName("Deve validar equals e hashCode baseados em id")
-    void deveValidarEqualsEHashCode() {
+    @DisplayName("Validate não deve lançar exceção quando módulos são diferentes ou nulos")
+    void validateNaoDeveLancarExcecao() {
         Module m1 = new Module(1L, "Financeiro", "desc");
         Module m2 = new Module(2L, "RH", "desc");
 
-        ModuleIncompatibility i1 = new ModuleIncompatibility(10L, m1, m2);
-        ModuleIncompatibility i2 = new ModuleIncompatibility(10L, m1, m2);
-        ModuleIncompatibility i3 = new ModuleIncompatibility(20L, m1, m2);
+        ModuleIncompatibility i1 = new ModuleIncompatibility(m1, m2);
+        ModuleIncompatibility i2 = new ModuleIncompatibility(null, m2);
+        ModuleIncompatibility i3 = new ModuleIncompatibility(m1, null);
 
-        assertEquals(i1, i2);
-        assertNotEquals(i1, i3);
-        assertEquals(i1.hashCode(), i2.hashCode());
+        assertAll(
+                () -> assertDoesNotThrow(i1::validate),
+                () -> assertDoesNotThrow(i2::validate),
+                () -> assertDoesNotThrow(i3::validate)
+        );
     }
 
     @Test
-    @DisplayName("Deve gerar toString contendo id e nomes dos módulos")
+    @DisplayName("Equals e hashCode devem considerar apenas id")
+    void deveValidarEqualsEHashCode() {
+        ModuleIncompatibility i1 = new ModuleIncompatibility();
+        i1.setId(10L);
+
+        ModuleIncompatibility i2 = new ModuleIncompatibility();
+        i2.setId(10L);
+
+        ModuleIncompatibility i3 = new ModuleIncompatibility();
+        i3.setId(20L);
+
+        assertAll(
+                () -> assertEquals(i1, i2),
+                () -> assertNotEquals(i1, i3),
+                () -> assertEquals(i1.hashCode(), i2.hashCode()),
+                () -> assertNotEquals(i1.hashCode(), i3.hashCode())
+        );
+    }
+
+    @Test
+    @DisplayName("Equals deve retornar false para null e classe diferente")
+    void equalsDeveRetornarFalseParaNullOuClasseDiferente() {
+        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
+        assertFalse(incompatibility.equals(null));
+        assertFalse(incompatibility.equals(new Object()));
+    }
+
+    @Test
+    @DisplayName("ToString deve incluir id e nomes dos módulos quando definidos")
     void deveGerarToStringCorretamente() {
         Module m1 = new Module(1L, "Financeiro", "desc");
         Module m2 = new Module(2L, "RH", "desc");
@@ -79,58 +114,44 @@ class ModuleIncompatibilityTest {
         ModuleIncompatibility incompatibility = new ModuleIncompatibility(10L, m1, m2);
 
         String toString = incompatibility.toString();
-        assertTrue(toString.contains("id=10"));
-        assertTrue(toString.contains("Financeiro"));
-        assertTrue(toString.contains("RH"));
+        assertAll(
+                () -> assertTrue(toString.contains("id=10")),
+                () -> assertTrue(toString.contains("Financeiro")),
+                () -> assertTrue(toString.contains("RH"))
+        );
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando módulo é igual ao incompatível")
-    void shouldThrowExceptionWhenModuleEqualsIncompatible() {
-        Module m = new Module();
-        m.setId(1L);
-        m.setName("Financeiro");
+    @DisplayName("ToString deve lidar com módulos nulos e parciais")
+    void toStringDeveLidarComNulosEParciais() {
+        Module m1 = new Module(1L, "Financeiro", "desc");
 
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility(m, m);
+        ModuleIncompatibility i1 = new ModuleIncompatibility();
+        ModuleIncompatibility i2 = new ModuleIncompatibility(m1, null);
+        ModuleIncompatibility i3 = new ModuleIncompatibility(null, m1);
 
-        assertThrows(IllegalArgumentException.class, incompatibility::validate);
+        assertAll(
+                () -> assertTrue(i1.toString().contains("null")),
+                () -> assertTrue(i2.toString().contains("Financeiro")),
+                () -> assertTrue(i3.toString().contains("Financeiro"))
+        );
     }
 
     @Test
-    @DisplayName("Não deve lançar exceção quando módulos são diferentes")
-    void shouldNotThrowWhenModulesAreDifferent() {
-        Module m1 = new Module();
-        m1.setId(1L);
-        m1.setName("Financeiro");
+    @DisplayName("Getters e Setters devem atribuir valores corretamente")
+    void deveTestarGettersESetters() {
+        Module m1 = new Module(1L, "Financeiro", "desc");
+        Module m2 = new Module(2L, "RH", "desc");
 
-        Module m2 = new Module();
-        m2.setId(2L);
-        m2.setName("RH");
-
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility(m1, m2);
-
-        assertDoesNotThrow(incompatibility::validate);
-    }
-
-    @Test
-    @DisplayName("Equals deve retornar true quando comparar o mesmo objeto")
-    void equalsShouldReturnTrueWhenSameObject() {
         ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        assertTrue(incompatibility.equals(incompatibility));
-    }
+        incompatibility.setId(99L);
+        incompatibility.setModule(m1);
+        incompatibility.setIncompatibleModule(m2);
 
-    @Test
-    @DisplayName("Equals deve retornar false quando comparar com classe diferente")
-    void equalsShouldReturnFalseWhenDifferentClass() {
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        assertFalse(incompatibility.equals(new Object()));
-    }
-
-    @Test
-    @DisplayName("ToString deve lidar com módulos nulos")
-    void toStringShouldHandleNullModules() {
-        ModuleIncompatibility incompatibility = new ModuleIncompatibility();
-        String result = incompatibility.toString();
-        assertTrue(result.contains("null"));
+        assertAll(
+                () -> assertEquals(99L, incompatibility.getId()),
+                () -> assertEquals(m1, incompatibility.getModule()),
+                () -> assertEquals(m2, incompatibility.getIncompatibleModule())
+        );
     }
 }

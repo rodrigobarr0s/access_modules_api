@@ -11,8 +11,4 @@ public class DuplicateEntityException extends RuntimeException {
         super(entityName + " já existe: " + identifier);
     }
 
-    public DuplicateEntityException(String message) {
-        super(message);
-    }
-
 }
