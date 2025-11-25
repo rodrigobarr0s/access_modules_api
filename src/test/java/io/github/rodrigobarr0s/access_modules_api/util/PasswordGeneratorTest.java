@@ -12,6 +12,6 @@ class PasswordGeneratorTest {
         System.out.println("financeiro@empresa.com: " + encoder.encode("admin"));
         System.out.println("rh@empresa.com: " + encoder.encode("admin"));
         System.out.println("operacoes@empresa.com: " + encoder.encode("admin"));
-        System.out.println("auditoria@empresa.com: " + encoder.encode("admin"));
+        System.out.println("ti@empresa.com: " + encoder.encode("admin"));
     }
 }
