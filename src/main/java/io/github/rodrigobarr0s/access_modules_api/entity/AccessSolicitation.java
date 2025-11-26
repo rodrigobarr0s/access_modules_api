@@ -74,6 +74,11 @@ public class AccessSolicitation implements Serializable {
     @OneToMany(mappedBy = "solicitation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SolicitationHistory> history = new ArrayList<>();
 
+    // Solicitação anterior (para suportar renovação)
+    @ManyToOne
+    @JoinColumn(name = "previous_solicitation_id")
+    private AccessSolicitation previousSolicitation;
+
     // Construtores
     public AccessSolicitation() {
     }
@@ -211,6 +216,14 @@ public class AccessSolicitation implements Serializable {
 
     public void setHistory(List<SolicitationHistory> history) {
         this.history = history;
+    }
+
+    public AccessSolicitation getPreviousSolicitation() {
+        return previousSolicitation;
+    }
+
+    public void setPreviousSolicitation(AccessSolicitation previousSolicitation) {
+        this.previousSolicitation = previousSolicitation;
     }
 
     // equals e hashCode baseados em id

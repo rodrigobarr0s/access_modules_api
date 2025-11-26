@@ -251,10 +251,27 @@ public class AccessSolicitationService {
     @Transactional
     public AccessSolicitation cancel(String protocolo, String reason) {
         AccessSolicitation solicitation = findByProtocolo(protocolo);
+
+        // Regra 1: só pode cancelar se estiver ATIVO
+        if (solicitation.getStatus() != SolicitationStatus.ATIVO) {
+            throw new IllegalStateException("Somente solicitações ativas podem ser canceladas");
+        }
+
+        // Regra 2: motivo obrigatório e válido
+        if (reason == null || reason.trim().length() < 10 || reason.trim().length() > 200) {
+            throw new IllegalArgumentException("Motivo do cancelamento deve ter entre 10 e 200 caracteres");
+        }
+
+        // Regra 3: mudar status para CANCELADO
         solicitation.setStatus(SolicitationStatus.CANCELADO);
         solicitation.setCancelReason(reason);
 
-        // registra histórico
+        // Regra 4: revogar acesso imediatamente
+        User user = solicitation.getUser();
+        Module module = solicitation.getModule();
+        user.getAccesses().removeIf(access -> access.getModule().equals(module));
+
+        // Regra 5: registrar histórico
         solicitation.addHistory(HistoryAction.CANCELADO, reason);
 
         return repository.save(solicitation);
@@ -262,25 +279,44 @@ public class AccessSolicitationService {
 
     @Transactional
     public AccessSolicitation renew(String protocolo) {
-        AccessSolicitation solicitation = findByProtocolo(protocolo);
-        solicitation.setExpiresAt(LocalDateTime.now().plusDays(180));
-        solicitation.setProtocolo(generateProtocolo());
+        AccessSolicitation original = findByProtocolo(protocolo);
 
-        String motivoNegacao = validarSolicitacao(
-                solicitation.getUser(),
-                solicitation.getModule(),
-                solicitation.getJustificativa());
-
-        if (motivoNegacao == null) {
-            solicitation.setStatus(SolicitationStatus.ATIVO);
-            solicitation.addHistory(HistoryAction.RENOVADO, null);
-        } else {
-            solicitation.setStatus(SolicitationStatus.NEGADO);
-            solicitation.setNegationReason(motivoNegacao);
-            solicitation.addHistory(HistoryAction.NEGADO, motivoNegacao);
+        // Regras de renovação
+        if (original.getStatus() != SolicitationStatus.ATIVO) {
+            throw new IllegalStateException("Somente solicitações ativas podem ser renovadas");
         }
 
-        return repository.save(solicitation);
+        if (original.getExpiresAt().isAfter(LocalDateTime.now().plusDays(30))) {
+            throw new IllegalStateException(
+                    "Renovação permitida apenas quando faltarem menos de 30 dias para expiração");
+        }
+
+        // Criar nova solicitação vinculada à anterior
+        AccessSolicitation renewed = new AccessSolicitation();
+        renewed.setUser(original.getUser());
+        renewed.setModule(original.getModule());
+        renewed.setJustificativa(original.getJustificativa());
+        renewed.setUrgente(original.isUrgente());
+        renewed.setExpiresAt(LocalDateTime.now().plusDays(180));
+        renewed.setProtocolo(generateProtocolo());
+        renewed.setPreviousSolicitation(original); // vínculo à anterior (precisa campo na entidade)
+
+        // Reaplicar regras de negócio
+        String motivoNegacao = validarSolicitacao(
+                renewed.getUser(),
+                renewed.getModule(),
+                renewed.getJustificativa());
+
+        if (motivoNegacao == null) {
+            renewed.setStatus(SolicitationStatus.ATIVO);
+            renewed.addHistory(HistoryAction.RENOVADO, null);
+        } else {
+            renewed.setStatus(SolicitationStatus.NEGADO);
+            renewed.setNegationReason(motivoNegacao);
+            renewed.addHistory(HistoryAction.NEGADO, motivoNegacao);
+        }
+
+        return repository.save(renewed);
     }
 
 }

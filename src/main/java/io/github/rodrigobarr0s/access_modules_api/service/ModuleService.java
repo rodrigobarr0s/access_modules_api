@@ -1,5 +1,6 @@
 package io.github.rodrigobarr0s.access_modules_api.service;
 
+import io.github.rodrigobarr0s.access_modules_api.dto.ModuleAvailableResponse;
 import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 import io.github.rodrigobarr0s.access_modules_api.entity.ModuleIncompatibility;
 import io.github.rodrigobarr0s.access_modules_api.repository.ModuleRepository;
@@ -66,6 +67,13 @@ public class ModuleService {
         } catch (EntityNotFoundException e) {
             throw new ResourceNotFoundException("Módulo", "id=" + id);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ModuleAvailableResponse> listAvailableModules() {
+        return repository.findAll().stream()
+                .map(ModuleAvailableResponse::new)
+                .toList();
     }
 
     /**

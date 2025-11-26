@@ -29,7 +29,17 @@ public class Module implements Serializable {
     @Column(length = 500)
     private String description;
 
-    // Relacionamento com UserModuleAccess
+    // Departamentos permitidos
+    @ElementCollection
+    @CollectionTable(name = "module_departments", joinColumns = @JoinColumn(name = "module_id"))
+    @Column(name = "department")
+    private Set<String> allowedDepartments = new HashSet<>();
+
+    // Indicador se o módulo está ativo
+    @Column(nullable = false)
+    private boolean active = true;
+
+    // Relacionamento com acessos de usuários
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<UserModuleAccess> accesses = new HashSet<>();
 
@@ -38,8 +48,7 @@ public class Module implements Serializable {
     private Set<ModuleIncompatibility> incompatibilities = new HashSet<>();
 
     // Construtores
-    public Module() {
-    }
+    public Module() {}
 
     public Module(Long id, String name, String description) {
         this.id = id;
@@ -53,39 +62,28 @@ public class Module implements Serializable {
     }
 
     // Getters e Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public Set<String> getAllowedDepartments() { return allowedDepartments; }
+    public void setAllowedDepartments(Set<String> allowedDepartments) { this.allowedDepartments = allowedDepartments; }
 
-    public String getDescription() {
-        return description;
-    }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public Set<UserModuleAccess> getAccesses() { return accesses; }
+    public void setAccesses(Set<UserModuleAccess> accesses) { this.accesses = accesses; }
 
-    public Set<UserModuleAccess> getAccesses() {
-        return accesses;
-    }
+    public Set<ModuleIncompatibility> getIncompatibilities() { return incompatibilities; }
+    public void setIncompatibilities(Set<ModuleIncompatibility> incompatibilities) { this.incompatibilities = incompatibilities; }
 
-    public Set<ModuleIncompatibility> getIncompatibilities() {
-        return incompatibilities;
-    }
-
-    // Métodos auxiliares para manter consistência nos relacionamentos
+    // Métodos auxiliares
     public void addAccess(UserModuleAccess access) {
         this.accesses.add(access);
         access.setModule(this);
@@ -106,20 +104,15 @@ public class Module implements Serializable {
         incompatibility.setModule(null);
     }
 
+    // equals e hashCode
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof Module))
-            return false;
+        if (this == o) return true;
+        if (!(o instanceof Module)) return false;
         Module other = (Module) o;
-
-        // Se ambos têm id definido, compara por id
         if (this.id != null && other.id != null) {
             return Objects.equals(this.id, other.id);
         }
-
-        // Se id é null, compara pelo nome
         return Objects.equals(this.name, other.name);
     }
 
