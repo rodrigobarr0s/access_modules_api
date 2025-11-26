@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -139,94 +140,181 @@ class AccessSolicitationServiceExtraTest {
     @Test
     @DisplayName("findByProtocolo deve retornar solicitação autorizada")
     void shouldFindByProtocoloAuthorized() {
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setProtocolo("SOL-123");
 
+        // mock ajustado para usar findByProtocoloWithHistory
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+
+        // execução
         AccessSolicitation result = service.findByProtocolo("SOL-123");
 
+        // validações
         assertEquals(solicitation, result);
-        verify(repository).findByProtocolo(eq("SOL-123"));
+
+        // verifica chamada correta
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
     }
 
     @Test
     @DisplayName("findByProtocolo deve lançar AccessDeniedException para usuário diferente")
     void shouldThrowAccessDeniedForDifferentUser() {
+        // cria outro usuário diferente do autenticado
         User otherUser = new User();
         otherUser.setEmail("other@email.com");
         solicitation.setUser(otherUser);
+        solicitation.setProtocolo("SOL-123");
 
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        // mock ajustado para usar findByProtocoloWithHistory
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
 
+        // autenticação com usuário diferente
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken("user@email.com", null));
 
+        // execução e validação
         assertThrows(AccessDeniedException.class, () -> service.findByProtocolo("SOL-123"));
-        verify(repository).findByProtocolo(eq("SOL-123"));
+
+        // verifica chamada correta
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
     }
 
     @Test
     @DisplayName("findByProtocolo deve lançar ResourceNotFoundException quando não encontrado")
     void shouldThrowNotFoundWhenProtocoloMissing() {
-        when(repository.findByProtocolo(eq("SOL-404"))).thenReturn(Optional.empty());
+        // mock ajustado para usar findByProtocoloWithHistory
+        when(repository.findByProtocoloWithHistory(eq("SOL-404"))).thenReturn(Optional.empty());
 
+        // execução e validação
         assertThrows(ResourceNotFoundException.class, () -> service.findByProtocolo("SOL-404"));
-        verify(repository).findByProtocolo(eq("SOL-404"));
+
+        // verifica chamada correta
+        verify(repository).findByProtocoloWithHistory(eq("SOL-404"));
     }
 
     @Test
     @DisplayName("cancel deve atualizar status para CANCELADO e salvar")
     void shouldCancelSolicitation() {
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
         when(repository.save(eq(solicitation))).thenReturn(solicitation);
 
-        AccessSolicitation result = service.cancel("SOL-123", "Motivo de cancelamento");
+        // execução
+        AccessSolicitation result = service.cancel("SOL-123", "Motivo de cancelamento válido");
 
+        // validações
         assertEquals(SolicitationStatus.CANCELADO, result.getStatus());
-        assertEquals("Motivo de cancelamento", result.getCancelReason());
+        assertEquals("Motivo de cancelamento válido", result.getCancelReason());
+        assertEquals(solicitation, result); // continua sendo o mesmo objeto
 
-        verify(repository).findByProtocolo(eq("SOL-123"));
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
         verify(repository).save(eq(solicitation));
     }
 
     @Test
     @DisplayName("renew deve aprovar solicitação válida")
     void shouldRenewApprovedSolicitation() {
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
-        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
+        solicitation.setJustificativa("Justificativa válida e detalhada");
 
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // execução
         AccessSolicitation result = service.renew("SOL-123");
 
+        // validações
         assertEquals(SolicitationStatus.ATIVO, result.getStatus());
         assertNotNull(result.getProtocolo());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
+
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).save(eq(result));
     }
 
     @Test
     @DisplayName("renew deve negar por justificativa insuficiente")
     void shouldRenewDeniedForShortJustification() {
-        solicitation.setJustificativa("curta");
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
-        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
+        solicitation.setJustificativa("curta"); // justificativa insuficiente
 
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // execução
         AccessSolicitation result = service.renew("SOL-123");
 
+        // validações
         assertEquals(SolicitationStatus.NEGADO, result.getStatus());
         assertEquals("Justificativa insuficiente ou genérica", result.getNegationReason());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
+
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).save(eq(result));
     }
 
     @Test
     @DisplayName("renew deve negar quando já existe solicitação ativa para o módulo")
     void shouldRenewDeniedForDuplicateSolicitation() {
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
+
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
         when(repository.existsByUserAndModuleAndStatus(eq(user), eq(module), eq(SolicitationStatus.ATIVO.getCode())))
                 .thenReturn(true);
-        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
+        // execução
         AccessSolicitation result = service.renew("SOL-123");
 
+        // validações
         assertEquals(SolicitationStatus.NEGADO, result.getStatus());
         assertEquals("Usuário já possui solicitação ativa para este módulo", result.getNegationReason());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
+
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).existsByUserAndModuleAndStatus(eq(user), eq(module), eq(SolicitationStatus.ATIVO.getCode()));
+        verify(repository).save(eq(result));
     }
 
     @Test
@@ -236,18 +324,32 @@ class AccessSolicitationServiceExtraTest {
         user.getAccesses().clear();
         user.addAccess(new UserModuleAccess(user, module));
 
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
-        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
 
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // execução
         AccessSolicitation result = service.renew("SOL-123");
 
+        // validações
         assertEquals(SolicitationStatus.NEGADO, result.getStatus());
         assertEquals("Usuário já possui acesso ativo a este módulo", result.getNegationReason());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
 
-        verify(repository).findByProtocolo(eq("SOL-123"));
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
         verify(sequenceRepository).getNextSequenceValue();
-        verify(repository).save(eq(solicitation));
+        verify(repository).save(eq(result));
     }
 
     @Test
@@ -260,49 +362,76 @@ class AccessSolicitationServiceExtraTest {
         user.getAccesses().clear();
         user.addAccess(new UserModuleAccess(user, other));
 
-        // cria a solicitação para módulo incompatível
+        // cria a solicitação original para módulo incompatível
         Module novoModulo = new Module();
         novoModulo.setId(100L);
         novoModulo.setName("Solicitante Financeiro");
         solicitation.setModule(novoModulo);
+        solicitation.setProtocolo("SOL-123");
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
 
-        when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
         when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-        when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
+        // execução
         AccessSolicitation result = service.renew("SOL-123");
 
+        // validações
         assertEquals(SolicitationStatus.NEGADO, result.getStatus());
         assertEquals("Módulo incompatível com outro módulo já ativo em seu perfil", result.getNegationReason());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
 
-        verify(repository).findByProtocolo(eq("SOL-123"));
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
         verify(sequenceRepository).getNextSequenceValue();
-        verify(repository).save(eq(solicitation));
+        verify(repository).save(eq(result));
     }
 
     @Test
-@DisplayName("renew deve negar quando limite de módulos ativos é atingido")
-void shouldRenewDeniedForLimitExceeded() {
-    // limpa acessos existentes
-    user.getAccesses().clear();
+    @DisplayName("renew deve negar quando limite de módulos ativos é atingido")
+    void shouldRenewDeniedForLimitExceeded() {
+        // configura solicitação original
+        solicitation.setUser(user);
+        solicitation.setModule(module);
+        solicitation.setProtocolo("SOL-123"); // protocolo definido
+        solicitation.setStatus(SolicitationStatus.ATIVO);
+        solicitation.setExpiresAt(LocalDateTime.now().plusDays(10)); // dentro da regra de 30 dias
 
-    // adiciona 10 acessos simulando limite atingido (todos diferentes do módulo da solicitação)
-    IntStream.range(0, 10).forEach(i -> {
-        Module mod = new Module();
-        mod.setId((long) i + 100); // ids diferentes
-        mod.setName("ModuloExtra" + i);
-        user.addAccess(new UserModuleAccess(user, mod));
-    });
+        // adiciona 10 acessos simulando limite atingido
+        user.getAccesses().clear();
+        IntStream.range(0, 10).forEach(i -> {
+            Module extra = new Module();
+            extra.setId((long) (i + 100));
+            extra.setName("ModuloExtra" + i);
+            user.addAccess(new UserModuleAccess(user, extra));
+        });
 
-    when(repository.findByProtocolo(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
-    when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
-    when(repository.save(eq(solicitation))).thenReturn(solicitation);
+        // mocks
+        when(repository.findByProtocoloWithHistory(eq("SOL-123"))).thenReturn(Optional.of(solicitation));
+        when(sequenceRepository.getNextSequenceValue()).thenReturn(1L);
+        // retorna exatamente o objeto passado no save
+        when(repository.save(eq(solicitation))).thenReturn(solicitation); // não serve mais
+        // solução correta: capturar o objeto salvo
+        when(repository.save(org.mockito.ArgumentMatchers.any(AccessSolicitation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-    AccessSolicitation result = service.renew("SOL-123");
+        // execução
+        AccessSolicitation result = service.renew("SOL-123");
 
-    assertEquals(SolicitationStatus.NEGADO, result.getStatus());
-    assertEquals("Limite de módulos ativos atingido", result.getNegationReason());
-}
+        // validações
+        assertEquals(SolicitationStatus.NEGADO, result.getStatus());
+        assertEquals("Limite de módulos ativos atingido", result.getNegationReason());
+        assertEquals(solicitation, result.getPreviousSolicitation()); // vínculo à original
 
+        // verifica chamadas
+        verify(repository).findByProtocoloWithHistory(eq("SOL-123"));
+        verify(sequenceRepository).getNextSequenceValue();
+        verify(repository).save(eq(result));
+    }
 
 }

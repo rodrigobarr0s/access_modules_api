@@ -119,6 +119,7 @@
 
 			 <!--mvn clean verify-->
 			 <!--mvn jacoco:report-->
+			 <!--mvn clean test jacoco:report-->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>

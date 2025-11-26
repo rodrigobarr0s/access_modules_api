@@ -48,7 +48,8 @@ public class Module implements Serializable {
     private Set<ModuleIncompatibility> incompatibilities = new HashSet<>();
 
     // Construtores
-    public Module() {}
+    public Module() {
+    }
 
     public Module(Long id, String name, String description) {
         this.id = id;
@@ -62,26 +63,61 @@ public class Module implements Serializable {
     }
 
     // Getters e Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public Set<String> getAllowedDepartments() { return allowedDepartments; }
-    public void setAllowedDepartments(Set<String> allowedDepartments) { this.allowedDepartments = allowedDepartments; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Set<UserModuleAccess> getAccesses() { return accesses; }
-    public void setAccesses(Set<UserModuleAccess> accesses) { this.accesses = accesses; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Set<ModuleIncompatibility> getIncompatibilities() { return incompatibilities; }
-    public void setIncompatibilities(Set<ModuleIncompatibility> incompatibilities) { this.incompatibilities = incompatibilities; }
+    public Set<String> getAllowedDepartments() {
+        return allowedDepartments;
+    }
+
+    public void setAllowedDepartments(Set<String> allowedDepartments) {
+        this.allowedDepartments = allowedDepartments;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public Set<UserModuleAccess> getAccesses() {
+        return accesses;
+    }
+
+    public void setAccesses(Set<UserModuleAccess> accesses) {
+        this.accesses = accesses;
+    }
+
+    public Set<ModuleIncompatibility> getIncompatibilities() {
+        return incompatibilities;
+    }
+
+    public void setIncompatibilities(Set<ModuleIncompatibility> incompatibilities) {
+        this.incompatibilities = incompatibilities;
+    }
 
     // Métodos auxiliares
     public void addAccess(UserModuleAccess access) {
@@ -107,8 +143,10 @@ public class Module implements Serializable {
     // equals e hashCode
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Module)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Module))
+            return false;
         Module other = (Module) o;
         if (this.id != null && other.id != null) {
             return Objects.equals(this.id, other.id);

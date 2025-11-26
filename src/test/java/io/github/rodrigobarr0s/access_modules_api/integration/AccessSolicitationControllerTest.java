@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import io.github.rodrigobarr0s.access_modules_api.entity.Module;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -87,6 +88,12 @@ class AccessSolicitationControllerTest {
                 solicitation.setProtocolo("PROTO456");
                 solicitation.setStatus(SolicitationStatus.ATIVO);
 
+                // Corrige: cria um módulo e associa
+                Module module = new Module();
+                module.setId(1L);
+                module.setName("Gestão Financeira");
+                solicitation.setModule(module);
+
                 Pageable pageable = PageRequest.of(0, 10);
                 Page<AccessSolicitation> page = new PageImpl<>(List.of(solicitation), pageable, 1);
 
@@ -103,7 +110,9 @@ class AccessSolicitationControllerTest {
                 mockMvc.perform(get("/solicitations")
                                 .param("status", SolicitationStatus.ATIVO.name()))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content[0].protocolo").value("PROTO456"));
+                                .andExpect(jsonPath("$.content[0].protocolo").value("PROTO456"))
+                                .andExpect(jsonPath("$.content[0].moduleId").value(1))
+                                .andExpect(jsonPath("$.content[0].moduleName").value("Gestão Financeira"));
         }
 
         @Test
@@ -113,30 +122,65 @@ class AccessSolicitationControllerTest {
                 solicitation.setProtocolo("PROTO789");
                 solicitation.setStatus(SolicitationStatus.ATIVO);
 
+                // Corrige: cria um módulo e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.Module module = new io.github.rodrigobarr0s.access_modules_api.entity.Module();
+                module.setId(1L);
+                module.setName("Gestão Financeira");
+                solicitation.setModule(module);
+
+                // Corrige: cria um usuário e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.User user = new io.github.rodrigobarr0s.access_modules_api.entity.User();
+                user.setId(10L);
+                user.setEmail("user@email.com");
+                solicitation.setUser(user);
+
                 Mockito.when(service.findByProtocolo(eq("PROTO789"))).thenReturn(solicitation);
 
                 mockMvc.perform(get("/solicitations/PROTO789"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.protocolo").value("PROTO789"));
+                                .andExpect(jsonPath("$.protocolo").value("PROTO789"))
+                                .andExpect(jsonPath("$.status").value("ATIVO"))
+                                .andExpect(jsonPath("$.moduleId").value(1))
+                                .andExpect(jsonPath("$.moduleName").value("Gestão Financeira"))
+                                .andExpect(jsonPath("$.userId").value(10))
+                                .andExpect(jsonPath("$.userEmail").value("user@email.com"));
         }
 
         @Test
         @DisplayName("PATCH /solicitations/{protocolo}/cancel deve cancelar solicitação")
         void deveCancelarSolicitacao() throws Exception {
                 CancelRequest cancelRequest = new CancelRequest();
-                cancelRequest.setReason("Não preciso mais");
+                cancelRequest.setReason("Motivo válido para cancelamento"); // >= 10 caracteres
 
                 AccessSolicitation solicitation = new AccessSolicitation();
                 solicitation.setProtocolo("PROTO999");
                 solicitation.setStatus(SolicitationStatus.CANCELADO);
 
-                Mockito.when(service.cancel(eq("PROTO999"), eq("Não preciso mais"))).thenReturn(solicitation);
+                // Corrige: cria um módulo e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.Module module = new io.github.rodrigobarr0s.access_modules_api.entity.Module();
+                module.setId(1L);
+                module.setName("Gestão Financeira");
+                solicitation.setModule(module);
+
+                // Corrige: cria um usuário e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.User user = new io.github.rodrigobarr0s.access_modules_api.entity.User();
+                user.setId(10L);
+                user.setEmail("user@email.com");
+                solicitation.setUser(user);
+
+                Mockito.when(service.cancel(eq("PROTO999"), eq("Motivo válido para cancelamento")))
+                                .thenReturn(solicitation);
 
                 mockMvc.perform(patch("/solicitations/PROTO999/cancel")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(cancelRequest)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.protocolo").value("PROTO999"));
+                                .andExpect(jsonPath("$.protocolo").value("PROTO999"))
+                                .andExpect(jsonPath("$.status").value("CANCELADO"))
+                                .andExpect(jsonPath("$.moduleId").value(1))
+                                .andExpect(jsonPath("$.moduleName").value("Gestão Financeira"))
+                                .andExpect(jsonPath("$.userId").value(10))
+                                .andExpect(jsonPath("$.userEmail").value("user@email.com"));
         }
 
         @Test
@@ -146,11 +190,28 @@ class AccessSolicitationControllerTest {
                 solicitation.setProtocolo("PROTO321");
                 solicitation.setStatus(SolicitationStatus.ATIVO);
 
+                // Corrige: cria um módulo e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.Module module = new io.github.rodrigobarr0s.access_modules_api.entity.Module();
+                module.setId(1L);
+                module.setName("Gestão Financeira");
+                solicitation.setModule(module);
+
+                // Corrige: cria um usuário e associa
+                io.github.rodrigobarr0s.access_modules_api.entity.User user = new io.github.rodrigobarr0s.access_modules_api.entity.User();
+                user.setId(10L);
+                user.setEmail("user@email.com");
+                solicitation.setUser(user);
+
                 Mockito.when(service.renew(eq("PROTO321"))).thenReturn(solicitation);
 
                 mockMvc.perform(patch("/solicitations/PROTO321/renew"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.protocolo").value("PROTO321"));
+                                .andExpect(jsonPath("$.protocolo").value("PROTO321"))
+                                .andExpect(jsonPath("$.status").value("ATIVO"))
+                                .andExpect(jsonPath("$.moduleId").value(1))
+                                .andExpect(jsonPath("$.moduleName").value("Gestão Financeira"))
+                                .andExpect(jsonPath("$.userId").value(10))
+                                .andExpect(jsonPath("$.userEmail").value("user@email.com"));
         }
 
 }
